@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="EN">
+    <head>
+        <title>GC21 Data Visualization With WebGL</title>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link href="./asset/css/canvas.css" rel="stylesheet"/>
+    </head>
+    <body>
+        <canvas id="gl_canvas" width="680" height="480"></canvas>
+        <script type="x-shader/x-vertex" id="simple1.vert">
+            attribute vec4 vPosition;
+            void main(void) {
+                gl_Position = vPosition;
+            }
+        </script>
+        <script type="x-shader/x-fragment" id="simple1.frag">
+            void main(void) {
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            }        
+        </script>
+        <script src="./asset/js/main.js"></script>
+    </body>
+</html>
