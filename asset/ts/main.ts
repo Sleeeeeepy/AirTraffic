@@ -2,6 +2,7 @@
 /// <reference path="./TD/ShaderProgram.ts" />
 /// <reference path="./TD/GL.ts" />
 /// <reference path="./TD/Buffer.ts" />
+/// <reference path="./TD/MathUtil.ts"/>
 // entry point
 main();
 
@@ -10,7 +11,7 @@ function main() {
     const canvas = <HTMLCanvasElement>document.getElementById("gl_canvas");
     const gl = TD.GL.instance;
     initGL(gl, canvas);
-
+    /*
     window.onresize = function () {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -19,17 +20,13 @@ function main() {
         gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
         gl.drawArrays(gl.TRIANGLES, 0, 4);   
     };
+    */
 
     // 다음 코드부터는 임시 코드입니다.
     // 버퍼에 정점 정보를 입력합니다.
     let buffer = new TD.Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    let vertices = new Float32Array([
-                                    0.0,  0.25,  1.0, 1.0,
-                                    -0.25, 0.25,  1.0, 1.0,
-                                    0.25,  -0.25, 1.0, 1.0
-                                ]);
-    buffer.upload(vertices);
-    
+    let verts = new Float32Array(createSphere(1.0, 18, 18));
+    buffer.upload(verts);
     // 셰이더 객체 생성
     let vshader = new TD.Shader("simple1.vert", gl.VERTEX_SHADER);
     let fshader = new TD.Shader("simple1.frag", gl.FRAGMENT_SHADER);
@@ -46,12 +43,60 @@ function main() {
     // draw
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 4);
-  
+    gl.drawArrays(gl.LINE_STRIP, 0, Math.floor(verts.length / 3));
+    gl.flush();
 }
 
 function initGL(gl: WebGLRenderingContext, canvas: HTMLCanvasElement) {
     //gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.enable(gl.DEPTH_TEST);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+/*
+function createSphere(radius: number, lon: number, lat: number) {
+    let vertice = [];
+    let normal = [];
+    let texcoord = [];
+    let index = [];
+
+    let u, v, ux, uy, uz, phi, theta, sp, cp, st, ct;
+    for (let i = 0; i <= lon; i++) {
+        for (let j = 0; j <= lat; j++) {
+            u = i / lat;
+            v = j / lon;
+            theta = radius * u;
+            phi = radius * v;
+            st = Math.sin(theta);
+            ct = Math.cos(theta);
+            sp = Math.sin(phi);
+            cp = Math.cos(phi);
+            ux = ct * sp;
+            uy = cp;
+            uz = st * sp;
+            vertice.push(radius * ux, radius * uy, radius * uz);
+            normal.push(ux, uy, uz);
+            texcoord.push(1 - u, v);
+        }
+    }
+}
+*/
+function createSphere(radius: number, stacks: number, slices: number) {
+    let ret = [];
+    let lonstep = Math.PI / stacks;
+    let latstep = Math.PI / slices;
+    let x, y, z;
+    for (let lon = 0.0; lon <= 2 * Math.PI; lon += (lonstep)) {
+        for (let lat = 0.0; lat <= Math.PI + latstep; lat += latstep) {
+            x = Math.cos(lon) * Math.sin(lat) * radius;
+            y = Math.sin(lon) * Math.sin(lat) * radius;
+            z = Math.cos(lat) * radius;
+            ret.push(x, y, z);
+            x = Math.cos(lon + lonstep) * Math.sin(lat) * radius;
+            y = Math.sin(lon + lonstep) * Math.sin(lat) * radius;
+            z = Math.cos(lat) * radius;
+            ret.push(x, y, z);
+        }
+    }
+    return ret;
 }
