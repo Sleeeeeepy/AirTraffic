@@ -33,12 +33,16 @@ namespace TD {
             if (this.buffer && data) {
                 this.gl.bindBuffer(this.bufferType, this.buffer);
                 this.gl.bufferData(this.bufferType, data, this.drawHint);
-                //this.gl.bindBuffer(this.bufferType, null);
                 return;
             }
             throw new Error("Fail to upload data to GPU.");
         }
         
+        public unbind(): void {
+            this.gl.bindBuffer(this.bufferType, null);
+            return;
+        }
+
         public bindBaseWithName(program: WebGLProgram, name: string): void {
             if (this.buffer) {
                 this.gl.bindBufferBase(this.bufferType, this.getIndex(program, name), this.buffer);
