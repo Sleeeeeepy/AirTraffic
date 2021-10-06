@@ -1,15 +1,15 @@
-/// <reference path="./TD/Shader.ts" />
-/// <reference path="./TD/ShaderProgram.ts" />
-/// <reference path="./TD/GL.ts" />
-/// <reference path="./TD/Buffer.ts" />
-/// <reference path="./TD/MathUtil.ts"/>
+import {Buffer} from './TD/Buffer';
+import {GL} from './TD/GL';
+import {Shader} from './TD/Shader';
+import {ShaderProgram} from './TD/ShaderProgram'; 
+
 // entry point
 main();
 
 function main() {
     //초기 설정을 합니다.
     const canvas = <HTMLCanvasElement>document.getElementById("gl_canvas");
-    const gl = TD.GL.instance;
+    const gl = GL.instance;
     initGL(gl, canvas);
     /*
     window.onresize = function () {
@@ -24,15 +24,15 @@ function main() {
 
     // 다음 코드부터는 임시 코드입니다.
     // 버퍼에 정점 정보를 입력합니다.
-    let buffer = new TD.Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    let buffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     let verts = new Float32Array(createSphere(1.0, 18, 18));
     buffer.upload(verts);
     // 셰이더 객체 생성
-    let vshader = new TD.Shader("simple1.vert", gl.VERTEX_SHADER);
-    let fshader = new TD.Shader("simple1.frag", gl.FRAGMENT_SHADER);
+    let vshader = new Shader("simple1.vert", gl.VERTEX_SHADER);
+    let fshader = new Shader("simple1.frag", gl.FRAGMENT_SHADER);
 
     // 셰이더 프로그램 생성
-    let prog = new TD.ShaderProgram("shader");
+    let prog = new ShaderProgram("shader");
     let cprog = prog.getShaderProgram(vshader, fshader);
     prog.use();
 
@@ -43,7 +43,16 @@ function main() {
     // draw
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.LINE_STRIP, 0, Math.floor(verts.length / 3));
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, Math.floor(verts.length / 3));
+    gl.flush();
+    buffer.unbind();
+
+    let points = pointOnSphere(1.0, 23.3, 22.8);
+    let buffer2 = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    buffer2.upload(new Float32Array(points));
+
+    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.POINTS, 0, 1);
     gl.flush();
 }
 
@@ -96,7 +105,18 @@ function createSphere(radius: number, stacks: number, slices: number) {
             y = Math.sin(lon + lonstep) * Math.sin(lat) * radius;
             z = Math.cos(lat) * radius;
             ret.push(x, y, z);
+            
         }
     }
+    console.log(ret);
+    return ret;
+}
+
+function pointOnSphere(radius: number, lon: number, lat: number) {
+    let ret = [];
+    let x = radius * Math.cos(lat) * Math.cos(lon);
+    let y = radius * Math.cos(lat) * Math.sin(lon);
+    let z = radius * Math.sin(lat);
+    ret.push(x,y,z);
     return ret;
 }
