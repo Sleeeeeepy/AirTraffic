@@ -7,17 +7,31 @@
         <link href="./asset/css/canvas.css" rel="stylesheet"/>
     </head>
     <body>
-        <canvas id="gl_canvas" width="680" height="480"></canvas>
-        <script type="x-shader/x-vertex" id="simple1.vert">
-            attribute vec4 vPosition;
-            void main(void) {
-                gl_Position = vPosition;
-            }
+        <canvas id="gl_canvas" width="800" height="800"></canvas>
+        <script type="x-shader/x-vertex" id="simple1.vert"> #version 300 es
+in vec3 vPosition;
+out vec3 vColor;
+void main(void) {
+    gl_Position = vec4(vPosition, 1.0);
+    gl_PointSize = 3.0;
+    vColor = vPosition;
+ }
         </script>
-        <script type="x-shader/x-fragment" id="simple1.frag">
-            void main(void) {
-                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            }        
+        <script type="x-shader/x-fragment" id="simple1.frag"> #version 300 es
+precision mediump float;
+in vec3 vColor;
+out vec4 Color;
+void main(void) {
+    Color = vec4(vColor, 1.0);
+}        
+        </script>
+        <script type="x-shader/x-fragment" id="flight.fs"> #version 300 es
+precision mediump float;
+uniform sampler2D texture;
+out vec4 Color;
+void main(void) {
+    Color = texture2D(texture, gl_PointCoord);
+}
         </script>
         <script src="./asset/js/main.js"></script>
     </body>
