@@ -1,2 +1,2 @@
 asset/ts/convention.txt
-asset/js/main.js
+asset/**/*.js.map
