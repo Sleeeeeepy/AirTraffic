@@ -1,7 +1,8 @@
-import {Buffer} from './TD/Buffer';
-import {GL} from './TD/GL';
-import {Shader} from './TD/Shader';
-import {ShaderProgram} from './TD/ShaderProgram'; 
+import {Buffer} from './TD/Buffer.js';
+import {Earth} from './TD/Earth.js';
+import {GL} from './TD/GL.js';
+import {Shader} from './TD/Shader.js';
+import {ShaderProgram} from './TD/ShaderProgram.js'; 
 
 // entry point
 main();
@@ -25,7 +26,9 @@ function main() {
     // 다음 코드부터는 임시 코드입니다.
     // 버퍼에 정점 정보를 입력합니다.
     let buffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    let verts = new Float32Array(createSphere(1.0, 18, 18));
+    // let verts = new Float32Array(createSphere(1.0, 18, 18));
+    Earth.create(1.0, 36);
+    let verts = new Float32Array(Earth.vertice);
     buffer.upload(verts);
     // 셰이더 객체 생성
     let vshader = new Shader("simple1.vert", gl.VERTEX_SHADER);
@@ -43,7 +46,7 @@ function main() {
     // draw
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, Math.floor(verts.length / 3));
+    gl.drawArrays(gl.LINE_STRIP, 0, Math.floor(verts.length / 3));
     gl.flush();
     buffer.unbind();
 

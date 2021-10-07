@@ -1,5 +1,5 @@
-import {GL} from './GL';
-import {Shader} from './Shader';
+import {GL} from './GL.js';
+import {Shader} from './Shader.js';
 
 export class ShaderProgram {
     private gl: WebGLRenderingContext = GL.instance;

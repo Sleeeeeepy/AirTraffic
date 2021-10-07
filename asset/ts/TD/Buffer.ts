@@ -1,4 +1,4 @@
-import {GL} from './GL';
+import {GL} from './GL.js';
 
 export class Buffer {
     private gl: WebGL2RenderingContext = GL.instance;

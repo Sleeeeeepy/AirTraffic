@@ -1,4 +1,4 @@
-import {GL} from './GL';
+import {GL} from './GL.js';
 
 export class Texture {
     private gl = GL.instance;
