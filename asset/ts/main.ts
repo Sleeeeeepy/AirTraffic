@@ -49,7 +49,7 @@ function main() {
     gl.flush();
     buffer.unbind();
 
-    let points = pointOnSphere(1.0, 23.3, 22.8);
+    let points = Earth.pointAt(1.0, 23.3, 22.8);
     let buffer2 = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     buffer2.upload(new Float32Array(points));
 
@@ -63,15 +63,4 @@ function initGL(gl: WebGLRenderingContext, canvas: HTMLCanvasElement) {
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-}
-
-function pointOnSphere(radius: number, lon: number, lat: number) {
-    let ret = [];
-    let latRad = lat * (Math.PI / 180);
-    let lonRad= -lon * (Math.PI / 180);
-    let x = Math.cos(latRad) * Math.cos(lonRad) * radius;
-    let y = Math.sin(latRad) * radius;
-    let z = Math.cos(latRad) * Math.sin(lonRad) * radius
-    ret.push(x,y,z);
-    return ret;
 }

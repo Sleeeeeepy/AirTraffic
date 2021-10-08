@@ -66,4 +66,15 @@ export class Earth {
         }
         this.isInitialized = true;
     }
+
+    public static pointAt(radius: number, lon: number, lat: number): any[] {
+        let ret = [];
+        let latRad = lat * (Math.PI / 180);
+        let lonRad= -lon * (Math.PI / 180);
+        let x = Math.cos(latRad) * Math.cos(lonRad) * radius;
+        let y = Math.sin(latRad) * radius;
+        let z = Math.cos(latRad) * Math.sin(lonRad) * radius
+        ret.push(x,y,z);
+        return ret;
+    }
 }
