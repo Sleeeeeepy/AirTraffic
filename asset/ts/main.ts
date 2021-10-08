@@ -26,7 +26,6 @@ function main() {
     // 다음 코드부터는 임시 코드입니다.
     // 버퍼에 정점 정보를 입력합니다.
     let buffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    // let verts = new Float32Array(createSphere(1.0, 18, 18));
     Earth.create(1.0, 36);
     let verts = new Float32Array(Earth.vertice);
     buffer.upload(verts);
@@ -64,55 +63,6 @@ function initGL(gl: WebGLRenderingContext, canvas: HTMLCanvasElement) {
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-}
-/*
-function createSphere(radius: number, lon: number, lat: number) {
-    let vertice = [];
-    let normal = [];
-    let texcoord = [];
-    let index = [];
-
-    let u, v, ux, uy, uz, phi, theta, sp, cp, st, ct;
-    for (let i = 0; i <= lon; i++) {
-        for (let j = 0; j <= lat; j++) {
-            u = i / lat;
-            v = j / lon;
-            theta = radius * u;
-            phi = radius * v;
-            st = Math.sin(theta);
-            ct = Math.cos(theta);
-            sp = Math.sin(phi);
-            cp = Math.cos(phi);
-            ux = ct * sp;
-            uy = cp;
-            uz = st * sp;
-            vertice.push(radius * ux, radius * uy, radius * uz);
-            normal.push(ux, uy, uz);
-            texcoord.push(1 - u, v);
-        }
-    }
-}
-*/
-function createSphere(radius: number, stacks: number, slices: number) {
-    let ret = [];
-    let lonstep = Math.PI / stacks;
-    let latstep = Math.PI / slices;
-    let x, y, z;
-    for (let lon = 0.0; lon <= 2 * Math.PI; lon += (lonstep)) {
-        for (let lat = 0.0; lat <= Math.PI + latstep; lat += latstep) {
-            x = Math.cos(lon) * Math.sin(lat) * radius;
-            y = Math.sin(lon) * Math.sin(lat) * radius;
-            z = Math.cos(lat) * radius;
-            ret.push(x, y, z);
-            x = Math.cos(lon + lonstep) * Math.sin(lat) * radius;
-            y = Math.sin(lon + lonstep) * Math.sin(lat) * radius;
-            z = Math.cos(lat) * radius;
-            ret.push(x, y, z);
-            
-        }
-    }
-    console.log(ret);
-    return ret;
 }
 
 function pointOnSphere(radius: number, lon: number, lat: number) {
