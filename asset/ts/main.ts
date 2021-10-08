@@ -117,9 +117,11 @@ function createSphere(radius: number, stacks: number, slices: number) {
 
 function pointOnSphere(radius: number, lon: number, lat: number) {
     let ret = [];
-    let x = radius * Math.cos(lat) * Math.cos(lon);
-    let y = radius * Math.cos(lat) * Math.sin(lon);
-    let z = radius * Math.sin(lat);
+    let latRad = lat * (Math.PI / 180);
+    let lonRad= -lon * (Math.PI / 180);
+    let x = Math.cos(latRad) * Math.cos(lonRad) * radius;
+    let y = Math.sin(latRad) * radius;
+    let z = Math.cos(latRad) * Math.sin(lonRad) * radius
     ret.push(x,y,z);
     return ret;
 }
