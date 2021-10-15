@@ -1,7 +1,7 @@
-import mat3 from './mat3';
-import mat4 from './mat4';
-import vec3 from './vec3';
-import { epsilon } from './constants';
+import mat3 from './mat3.js';
+import mat4 from './mat4.js';
+import vec3 from './vec3.js';
+import { epsilon } from './constants.js';
 export default class quat {
     constructor(values) {
         this.values = new Float32Array(4);

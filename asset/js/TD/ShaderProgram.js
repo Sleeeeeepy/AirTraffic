@@ -57,6 +57,15 @@ export class ShaderProgram {
         }
         throw new Error("Fail to set " + attributeName);
     }
+    getUniformLocation(uniformName) {
+        if (this.program) {
+            let location = this.gl.getUniformLocation(this.program, uniformName);
+            if (location) {
+                return location;
+            }
+        }
+        throw new Error("Fail to get location: " + uniformName);
+    }
     cleanUp() {
         if (this.shaders && this.shaders.length != 0 && this.program) {
             for (let i = 0; i < this.shaders.length; i++) {

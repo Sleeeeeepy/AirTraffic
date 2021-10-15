@@ -1,5 +1,5 @@
-import quat from './quat';
-import { epsilon } from './constants';
+import quat from './quat.js';
+import { epsilon } from './constants.js';
 export default class vec3 {
     constructor(values) {
         this.values = new Float32Array(3);

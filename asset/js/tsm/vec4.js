@@ -1,4 +1,4 @@
-import { epsilon } from './constants';
+import { epsilon } from './constants.js';
 export default class vec4 {
     constructor(values) {
         this.values = new Float32Array(4);

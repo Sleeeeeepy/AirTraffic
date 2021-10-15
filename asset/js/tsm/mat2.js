@@ -1,5 +1,5 @@
-import vec2 from './vec2';
-import { epsilon } from './constants';
+import vec2 from './vec2.js';
+import { epsilon } from './constants.js';
 export default class mat2 {
     constructor(values) {
         this.values = new Float32Array(4);
