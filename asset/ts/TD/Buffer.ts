@@ -38,6 +38,23 @@ export class Buffer {
         throw new Error("Fail to upload data to GPU.");
     }
 
+    public uploadUShort(data: Uint16Array): void {
+        if (this.buffer && data) {
+            this.gl.bindBuffer(this.bufferType, this.buffer);
+            this.gl.bufferData(this.bufferType, data, this.drawHint);
+            return;
+        }
+        throw new Error("Fail to upload data to GPU.");
+    }
+
+    public bind(): void {
+        if (this.buffer) {
+            this.gl.bindBuffer(this.bufferType, this.buffer);
+            return;
+        }
+        throw new Error("Fail to bind buffer.");
+    }
+
     public unbind(): void {
         this.gl.bindBuffer(this.bufferType, null);
         return;
