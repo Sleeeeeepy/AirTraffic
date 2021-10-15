@@ -65,6 +65,7 @@ export class ShaderProgram {
         throw new Error("Fail to use ShaderProgam " + this.name + ".");
     }
 
+    //deprecated
     public setAttribute(attributeName: string): number {
         if (this.program) {
             let vertexPositionAttribute = this.gl.getAttribLocation(this.program, attributeName);
@@ -72,6 +73,16 @@ export class ShaderProgram {
             return vertexPositionAttribute;
         }
         throw new Error("Fail to set " + attributeName);
+    }
+
+    public getUniformLocation(uniformName: string): WebGLUniformLocation {
+        if (this.program) {
+            let location = this.gl.getUniformLocation(this.program, uniformName);
+            if (location) {
+                return location;
+            }
+        }
+        throw new Error("Fail to get location: " + uniformName);
     }
 
     public cleanUp(): void {
