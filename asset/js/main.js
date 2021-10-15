@@ -22,7 +22,7 @@ function main() {
     let cprog = prog.getShaderProgram(vshader, fshader);
     prog.use();
     let radius = 100;
-    let zoom = 2.0;
+    let zoom = 1.0;
     let cam = new Camera(Math.PI / 3, 1, 0.1, 2000);
     let cameraMat = new mat4([
         1, 0, 0, 0,
@@ -30,7 +30,7 @@ function main() {
         0, 0, 1, 0,
         0, 0, 0, 1
     ]);
-    cameraMat.rotate(cam.pov, new vec3([1, 0, 0]));
+    cameraMat.rotate(cam.pov, new vec3([1, -1, 1]));
     cameraMat.translate(new vec3([0, 0, radius * zoom]));
     let uInverseCameraTransform = cameraMat.copy().inverse();
     let uModelTransform = [
