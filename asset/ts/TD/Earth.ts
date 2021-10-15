@@ -63,30 +63,6 @@ export class Earth {
     }
 
     private static createIndex(stacks: number, sectors: number) {
-        /*
-        let kk = 0;
-        for(let i = 0; i < stacks; ++i)
-        {
-            let k1 = i * (stacks + 1);            // beginning of current stack
-            let k2 = k1 + stacks + 1;             // beginning of next stack
-
-            for(let j=0; j < slices; ++j, ++k1, ++k2)
-            {
-                // 2 triangles per sector excluding 1st and last stacks
-                if(i != 0)
-                {
-                    this._index.push(kk, k1, k2, k1+1);  // k1---k2---k1+1
-                    kk += 3;
-                }
-
-                if(i != (stacks-1))
-                {
-                    this._index.push(kk, k1+1, k2, k2+1);// k1+1---k2---k2+1
-                    kk += 3;
-                }
-            }
-        }
-        */
        let k1, k2;
        for (let i = 0; i < stacks; i++) {
            k1 = i * (sectors + 1);
