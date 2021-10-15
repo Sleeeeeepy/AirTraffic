@@ -5,32 +5,41 @@
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <link href="./asset/css/canvas.css" rel="stylesheet"/>
+        <link href="./favicon.ico" rel="icon" type="image/x-icon"/>
     </head>
     <body>
         <canvas id="gl_canvas" width="800" height="800"></canvas>
-        <script type="x-shader/x-vertex" id="simple1.vert"> #version 300 es
-in vec3 vPosition;
-out vec3 vColor;
+        <script type="x-shader/x-vertex" id="earth.vert">#version 300 es
+layout(location = 0) in vec3 vPosition;
+//layout(location = 1) in vec2 vinTexcoord;
+uniform mat4 uCameraProjection;
+uniform mat4 uInverseCameraTransform;
+//uniform mat4 uModelTransform;
+out vec3 voutColor;
+//out vec2 voutTextcoord;
 void main(void) {
-    gl_Position = vec4(vPosition, 1.0);
+    gl_Position = uCameraProjection * uInverseCameraTransform * vec4(vPosition, 1.0);
     gl_PointSize = 3.0;
-    vColor = vPosition;
+    voutColor = vPosition;
+    //oTextcoord = iUV;
  }
         </script>
-        <script type="x-shader/x-fragment" id="simple1.frag"> #version 300 es
+        <script type="x-shader/x-fragment" id="earth.frag">#version 300 es
 precision mediump float;
-in vec3 vColor;
+in vec3 voutColor;
+//in vec2 voutTextcoord;
+//uniform sampler2D uTexture;
 out vec4 Color;
 void main(void) {
-    Color = vec4(vColor, 1.0);
+    Color = vec4(voutColor, 1.0); //texture(uTexture, oTextcoord);
 }        
         </script>
-        <script type="x-shader/x-fragment" id="flight.fs"> #version 300 es
+        <script type="x-shader/x-fragment" id="flight.fs">#version 300 es
 precision mediump float;
 uniform sampler2D texture;
 out vec4 Color;
 void main(void) {
-    Color = texture2D(texture, gl_PointCoord);
+    Color = texture2D(texture, oTextcoord);
 }
         </script>
         <script src="./asset/js/main.js" type="module"></script>
