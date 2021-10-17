@@ -54,7 +54,6 @@ function main() {
     let pov = Math.PI / 3
     let aspect = 1.0;
     let camera = new Camera(pov, aspect, 0.1, 2000);
-    let uCameraMatrix: mat4;
     function initCamera(radian: number, axis: vec3): mat4 {
         let identity  = new mat4([
             1, 0, 0, 0,
@@ -71,27 +70,32 @@ function main() {
         cameraMatrix.translate(new vec3([0, 0, orbitRadius / zoom]));
         let InverseCameraTransform = cameraMatrix.copy().inverse();
         let CameraProjection = camera.proMatrix;
-        uCameraMatrix = CameraProjection.multiply(InverseCameraTransform); 
+        let uCameraMatrix = CameraProjection.multiply(InverseCameraTransform); 
         let uict = prog.getUniformLocation("uCameraMatrix");
-        gl.uniformMatrix4fv(uict, false, uCameraMatrix.all()/*uInverseCameraTransform.all()*/);
+        gl.uniformMatrix4fv(uict, false, uCameraMatrix.all());
         return uCameraMatrix;
     }
     
     function camRotateZ(cameraMatrix: mat4, radian: number) {
-        cam.rotate(radian, new vec3([0, 0, 1]));
+        cameraMatrix.rotate(radian, new vec3([0, 0, 1]));
         let uict = prog.getUniformLocation("uCameraMatrix");
-        gl.uniformMatrix4fv(uict, false, cam.all()/*uInverseCameraTransform.all()*/);
+        gl.uniformMatrix4fv(uict, false, cameraMatrix.all());
+    }
+
+    function camRotateX(cameraMatrix: mat4, radian: number) {
+        cameraMatrix.rotate(radian, new vec3([1, 0, 0]));
+        let uict = prog.getUniformLocation("uCameraMatrix");
+        gl.uniformMatrix4fv(uict, false, cameraMatrix.all());
     }
     let cam = initCamera(Math.PI/2, new vec3([1, 0, 0]));
     draw();
 
     //카메라를 회전시키는 임시 코드
-    let i = 0;
     var tick = setInterval(function() {
-        i++;
-        camRotateZ(cam, Math.PI/3600 * i);
+        camRotateZ(cam, Math.PI / 600);
+        camRotateX(cam, -Math.PI / 300);
         draw();
-    }, 100);
+    }, 10);
     /*
         let points = Earth.pointAt(1.0, 23.3, 22.8);
         let buffer2 = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);

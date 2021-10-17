@@ -31,7 +31,6 @@ function main() {
     let pov = Math.PI / 3;
     let aspect = 1.0;
     let camera = new Camera(pov, aspect, 0.1, 2000);
-    let uCameraMatrix;
     function initCamera(radian, axis) {
         let identity = new mat4([
             1, 0, 0, 0,
@@ -49,24 +48,28 @@ function main() {
         cameraMatrix.translate(new vec3([0, 0, orbitRadius / zoom]));
         let InverseCameraTransform = cameraMatrix.copy().inverse();
         let CameraProjection = camera.proMatrix;
-        uCameraMatrix = CameraProjection.multiply(InverseCameraTransform);
+        let uCameraMatrix = CameraProjection.multiply(InverseCameraTransform);
         let uict = prog.getUniformLocation("uCameraMatrix");
         gl.uniformMatrix4fv(uict, false, uCameraMatrix.all());
         return uCameraMatrix;
     }
     function camRotateZ(cameraMatrix, radian) {
-        cam.rotate(radian, new vec3([0, 0, 1]));
+        cameraMatrix.rotate(radian, new vec3([0, 0, 1]));
         let uict = prog.getUniformLocation("uCameraMatrix");
-        gl.uniformMatrix4fv(uict, false, cam.all());
+        gl.uniformMatrix4fv(uict, false, cameraMatrix.all());
+    }
+    function camRotateX(cameraMatrix, radian) {
+        cameraMatrix.rotate(radian, new vec3([1, 0, 0]));
+        let uict = prog.getUniformLocation("uCameraMatrix");
+        gl.uniformMatrix4fv(uict, false, cameraMatrix.all());
     }
     let cam = initCamera(Math.PI / 2, new vec3([1, 0, 0]));
     draw();
-    let i = 0;
     var tick = setInterval(function () {
-        i++;
-        camRotateZ(cam, Math.PI / 3600 * i);
+        camRotateZ(cam, Math.PI / 600);
+        camRotateX(cam, -Math.PI / 300);
         draw();
-    }, 100);
+    }, 10);
 }
 function initGL(gl) {
     gl.enable(gl.DEPTH_TEST);
