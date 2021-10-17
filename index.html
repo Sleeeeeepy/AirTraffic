@@ -12,13 +12,13 @@
         <script type="x-shader/x-vertex" id="earth.vert">#version 300 es
 layout(location = 0) in vec3 vPosition;
 //layout(location = 1) in vec2 vinTexcoord;
-uniform mat4 uCameraProjection;
-uniform mat4 uInverseCameraTransform;
+uniform mat4 uCameraMatrix;
+//uniform mat4 uInverseCameraTransform;
 //uniform mat4 uModelTransform;
 out vec3 voutColor;
 //out vec2 voutTextcoord;
 void main(void) {
-    gl_Position = uCameraProjection * uInverseCameraTransform * vec4(vPosition, 1.0);
+    gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
     gl_PointSize = 3.0;
     voutColor = vPosition;
     //oTextcoord = iUV;

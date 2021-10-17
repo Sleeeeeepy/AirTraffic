@@ -21,44 +21,62 @@ function main() {
     let prog = new ShaderProgram("shader");
     let cprog = prog.getShaderProgram(vshader, fshader);
     prog.use();
-    let radius = 100;
-    let zoom = 1.0;
-    let cam = new Camera(Math.PI / 3, 1, 0.1, 2000);
-    let cameraMat = new mat4([
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ]);
-    cameraMat.rotate(cam.pov, new vec3([1, -1, 1]));
-    cameraMat.translate(new vec3([0, 0, radius * zoom]));
-    let uInverseCameraTransform = cameraMat.copy().inverse();
-    let uModelTransform = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    ];
-    let uCameraProjection = cam.proMatrix;
-    let uict = prog.getUniformLocation("uInverseCameraTransform");
-    let ucp = prog.getUniformLocation("uCameraProjection");
-    gl.uniformMatrix4fv(uict, false, uInverseCameraTransform.all());
-    gl.uniformMatrix4fv(ucp, false, uCameraProjection.all());
     vertexBuffer.bind();
     let vertexPositionAttribute = gl.getAttribLocation(cprog, "vPosition");
     gl.enableVertexAttribArray(vertexPositionAttribute);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     vertexBuffer.unbind();
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.drawElements(gl.LINE_STRIP, Earth.index.length, gl.UNSIGNED_SHORT, 0);
-    gl.flush();
-    vertexBuffer.unbind();
+    let orbitRadius = 100;
+    let zoom = 0.5;
+    let pov = Math.PI / 3;
+    let aspect = 1.0;
+    let camera = new Camera(pov, aspect, 0.1, 2000);
+    let uCameraMatrix;
+    function initCamera(radian, axis) {
+        let identity = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+        let cameraMatrix = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+        cameraMatrix.rotate(radian, axis);
+        cameraMatrix.translate(new vec3([0, 0, orbitRadius / zoom]));
+        let InverseCameraTransform = cameraMatrix.copy().inverse();
+        let CameraProjection = camera.proMatrix;
+        uCameraMatrix = CameraProjection.multiply(InverseCameraTransform);
+        let uict = prog.getUniformLocation("uCameraMatrix");
+        gl.uniformMatrix4fv(uict, false, uCameraMatrix.all());
+        return uCameraMatrix;
+    }
+    function camRotateZ(cameraMatrix, radian) {
+        cam.rotate(radian, new vec3([0, 0, 1]));
+        let uict = prog.getUniformLocation("uCameraMatrix");
+        gl.uniformMatrix4fv(uict, false, cam.all());
+    }
+    let cam = initCamera(Math.PI / 2, new vec3([1, 0, 0]));
+    draw();
+    let i = 0;
+    var tick = setInterval(function () {
+        i++;
+        camRotateZ(cam, Math.PI / 3600 * i);
+        draw();
+    }, 100);
 }
 function initGL(gl) {
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
-function initCamera(radius, gl) {
+function draw() {
+    const gl = GL.instance;
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.drawElements(gl.LINE_STRIP, Earth.index.length, gl.UNSIGNED_SHORT, 0);
+    gl.flush();
 }
 //# sourceMappingURL=main.js.map

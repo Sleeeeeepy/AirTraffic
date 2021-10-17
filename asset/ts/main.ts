@@ -1,9 +1,9 @@
-import {Buffer} from './TD/Buffer.js';
+import { Buffer } from './TD/Buffer.js';
 import { Camera } from './TD/Camera.js';
-import {Earth} from './TD/Earth.js';
-import {GL} from './TD/GL.js';
-import {Shader} from './TD/Shader.js';
-import {ShaderProgram} from './TD/ShaderProgram.js'; 
+import { Earth } from './TD/Earth.js';
+import { GL } from './TD/GL.js';
+import { Shader } from './TD/Shader.js';
+import { ShaderProgram } from './TD/ShaderProgram.js';
 import mat4 from './tsm/mat4.js';
 import vec3 from './tsm/vec3.js';
 import vec4 from './tsm/vec4.js';
@@ -16,7 +16,6 @@ function main() {
     const gl = GL.instance;
     initGL(gl);
 
-    // 다음 코드부터는 임시 코드입니다.
     // 버퍼에 정점 정보를 입력합니다.
     let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     Earth.create(1.0, 18, 18);
@@ -42,33 +41,6 @@ function main() {
     let cprog = prog.getShaderProgram(vshader, fshader);
     prog.use();
 
-    // 카메라 설정
-    
-    let radius = 100;
-    let zoom = 1.0;
-    let cam = new Camera(Math.PI/3, 1, 0.1, 2000);
-    let cameraMat = new mat4([
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1]);
-    cameraMat.rotate(cam.pov, new vec3([1, -1, 1]));
-    cameraMat.translate(new vec3([0, 0, radius * zoom]));
-    let uInverseCameraTransform = cameraMat.copy().inverse();
-    let uModelTransform = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1];
-    let uCameraProjection = cam.proMatrix;
-
-    let uict = prog.getUniformLocation("uInverseCameraTransform");
-    //let umt = prog.getUniformLocation("uModelTransform");
-    let ucp = prog.getUniformLocation("uCameraProjection");
-    gl.uniformMatrix4fv(uict, false, uInverseCameraTransform.all());
-    //gl.uniformMatrix4fv(umt, false, uModelTransform);
-    gl.uniformMatrix4fv(ucp, false, uCameraProjection.all());
-    
     // Vertex 설정
     vertexBuffer.bind();
     let vertexPositionAttribute = gl.getAttribLocation(cprog, "vPosition");
@@ -76,20 +48,59 @@ function main() {
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     vertexBuffer.unbind();
 
-    // draw
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.drawElements(gl.LINE_STRIP, Earth.index.length, gl.UNSIGNED_SHORT, 0);
-    gl.flush();
-    vertexBuffer.unbind();
-/*
-    let points = Earth.pointAt(1.0, 23.3, 22.8);
-    let buffer2 = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    buffer2.upload(new Float32Array(points));
+    // 카메라 설정
+    let orbitRadius = 100;
+    let zoom = 0.5;
+    let pov = Math.PI / 3
+    let aspect = 1.0;
+    let camera = new Camera(pov, aspect, 0.1, 2000);
+    let uCameraMatrix: mat4;
+    function initCamera(radian: number, axis: vec3): mat4 {
+        let identity  = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1]);
+        let cameraMatrix = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1]);
+        cameraMatrix.rotate(radian, axis);
+        //cameraMatrix = new mat4(rot(Math.PI/2));
+        cameraMatrix.translate(new vec3([0, 0, orbitRadius / zoom]));
+        let InverseCameraTransform = cameraMatrix.copy().inverse();
+        let CameraProjection = camera.proMatrix;
+        uCameraMatrix = CameraProjection.multiply(InverseCameraTransform); 
+        let uict = prog.getUniformLocation("uCameraMatrix");
+        gl.uniformMatrix4fv(uict, false, uCameraMatrix.all()/*uInverseCameraTransform.all()*/);
+        return uCameraMatrix;
+    }
+    
+    function camRotateZ(cameraMatrix: mat4, radian: number) {
+        cam.rotate(radian, new vec3([0, 0, 1]));
+        let uict = prog.getUniformLocation("uCameraMatrix");
+        gl.uniformMatrix4fv(uict, false, cam.all()/*uInverseCameraTransform.all()*/);
+    }
+    let cam = initCamera(Math.PI/2, new vec3([1, 0, 0]));
+    draw();
 
-    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.POINTS, 0, 1);
-    gl.flush();
-*/
+    //카메라를 회전시키는 임시 코드
+    let i = 0;
+    var tick = setInterval(function() {
+        i++;
+        camRotateZ(cam, Math.PI/3600 * i);
+        draw();
+    }, 100);
+    /*
+        let points = Earth.pointAt(1.0, 23.3, 22.8);
+        let buffer2 = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        buffer2.upload(new Float32Array(points));
+    
+        gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.POINTS, 0, 1);
+        gl.flush();
+    */
 }
 
 function initGL(gl: WebGLRenderingContext) {
@@ -99,6 +110,9 @@ function initGL(gl: WebGLRenderingContext) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
-function initCamera(radius: number, gl: WebGLRenderingContext) {
-
+function draw() {
+    const gl = GL.instance;
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.drawElements(gl.LINE_STRIP, Earth.index.length, gl.UNSIGNED_SHORT, 0);
+    gl.flush();
 }
