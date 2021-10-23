@@ -5,9 +5,11 @@ export class Texture {
     private textrue?: WebGLTexture | null;
     private image?: HTMLImageElement;
     private imageSource: string;
-
-    public constructor(imgSource: string) {
+    private textureUnit: number;
+    public constructor(imgSource: string, textureUnit: number) {
         this.imageSource = imgSource;
+        this.textureUnit = textureUnit;
+        this.init();
     }
 
     private init(): void {
@@ -15,22 +17,41 @@ export class Texture {
             this.textrue = this.gl.createTexture();
             this.image = new Image();
             this.image.src = this.imageSource;
+            this.image.onload = () => {
+                this.create();
+            }
             return;
         }
         throw new Error("Fail to initialize texture.");
     }
 
-    public create(): void {
-        this.init();
+    private create(): void {
         if (this.textrue && this.image) {
+
+            this.gl.activeTexture(this.textureUnit);
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.textrue);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, this.gl.RGBA, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.image);
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_NEAREST);
-            this.gl.generateMipmap(this.gl.TEXTURE_2D);
-            this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.image);
+            
+            //this.gl.bindTexture(this.gl.TEXTURE_2D, null);
             return;
         }
         throw new Error("Fail to create texture.");
+    }
+
+    public getWebGLTexture(): WebGLTexture {
+        if (this.textrue) {
+            return this.textrue;
+        }
+        throw new Error("Fail to get texture.");
+    }
+
+    public bind(): void {
+        if (this.textrue) {
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.textrue);
+        }
     }
 }
