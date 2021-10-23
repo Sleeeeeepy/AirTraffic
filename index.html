@@ -11,35 +11,37 @@
         <canvas id="gl_canvas" width="800" height="800"></canvas>
         <script type="x-shader/x-vertex" id="earth.vert">#version 300 es
 layout(location = 0) in vec3 vPosition;
-//layout(location = 1) in vec2 vinTexcoord;
+layout(location = 1) in vec2 vinTexturecoord;
 uniform mat4 uCameraMatrix;
-//uniform mat4 uInverseCameraTransform;
-//uniform mat4 uModelTransform;
 out vec3 voutColor;
-//out vec2 voutTextcoord;
+out vec2 voutTexturecoord;
 void main(void) {
     gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
     gl_PointSize = 3.0;
     voutColor = vPosition;
-    //oTextcoord = iUV;
+    voutTexturecoord = vinTexturecoord;
  }
         </script>
         <script type="x-shader/x-fragment" id="earth.frag">#version 300 es
 precision mediump float;
 in vec3 voutColor;
-//in vec2 voutTextcoord;
-//uniform sampler2D uTexture;
+in vec2 voutTexturecoord;
+uniform sampler2D uTexture;
 out vec4 Color;
 void main(void) {
-    Color = vec4(voutColor, 1.0); //texture(uTexture, oTextcoord);
+    Color = texture(uTexture, voutTexturecoord);
 }        
         </script>
-        <script type="x-shader/x-fragment" id="flight.fs">#version 300 es
+        <script type="x-shader/x-vertex" id="flight.vert">#version 300 es
+
+        </script>
+        <script type="x-shader/x-fragment" id="flight.frag">#version 300 es
 precision mediump float;
+in vec2 voutTexturecoord;
 uniform sampler2D texture;
 out vec4 Color;
 void main(void) {
-    Color = texture2D(texture, oTextcoord);
+    Color = texture2D(texture, voutTexturecoord);
 }
         </script>
         <script src="./asset/js/main.js" type="module"></script>
