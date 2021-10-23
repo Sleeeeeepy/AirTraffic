@@ -31,7 +31,6 @@ function main() {
     gl.enableVertexAttribArray(vertexPositionAttribute);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     vertexBuffer.unbind();
-    indexBuffer.bind();
     uvBuffer.bind();
     let uvAttrb = prog.setAttribute("vinTexturecoord");
     gl.enableVertexAttribArray(uvAttrb);
@@ -40,6 +39,7 @@ function main() {
     let texture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
     gl.uniform1i(prog.getUniformLocation("uTexture"), 0);
     gl.bindTexture(gl.TEXTURE_2D, texture.getWebGLTexture());
+    indexBuffer.bind();
     let orbitRadius = 100;
     let zoom = 0.5;
     let pov = Math.PI / 3;
