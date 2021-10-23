@@ -41,14 +41,14 @@ function main() {
     uvBuffer.upload(new Float32Array(Earth.texcoord));
     uvBuffer.unbind();
 
-    // Vertex 설정
+    // 정점 설정
     vertexBuffer.bind();
     let vertexPositionAttribute = gl.getAttribLocation(cprog, "vPosition");
     gl.enableVertexAttribArray(vertexPositionAttribute);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     vertexBuffer.unbind();
     indexBuffer.bind();
-    
+
     // 텍스처 좌표 설정
     uvBuffer.bind();
     let uvAttrb = prog.setAttribute("vinTexturecoord");
