@@ -47,7 +47,6 @@ function main() {
     gl.enableVertexAttribArray(vertexPositionAttribute);
     gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
     vertexBuffer.unbind();
-    indexBuffer.bind();
 
     // 텍스처 좌표 설정
     uvBuffer.bind();
@@ -60,6 +59,9 @@ function main() {
     let texture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
     gl.uniform1i(prog.getUniformLocation("uTexture"), 0);
     gl.bindTexture(gl.TEXTURE_2D, texture.getWebGLTexture());
+
+    //인덱스 버퍼 바인드
+    indexBuffer.bind();
 
     // 카메라 설정
     let orbitRadius = 100;
