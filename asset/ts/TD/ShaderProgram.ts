@@ -1,5 +1,6 @@
 import {GL} from './GL.js';
 import {Shader} from './Shader.js';
+import {Buffer} from './Buffer.js';
 
 export class ShaderProgram {
     private gl: WebGLRenderingContext = GL.instance;
@@ -65,14 +66,12 @@ export class ShaderProgram {
         throw new Error("Fail to use ShaderProgam " + this.name + ".");
     }
 
-    //deprecated
-    public setAttribute(attributeName: string): number {
+    public getAttributeLocation(attributeName: string): number {
         if (this.program) {
-            let vertexPositionAttribute = this.gl.getAttribLocation(this.program, attributeName);
-            this.gl.enableVertexAttribArray(vertexPositionAttribute);
-            return vertexPositionAttribute;
+            let location = this.gl.getAttribLocation(this.program, attributeName);
+            return location;
         }
-        throw new Error("Fail to set " + attributeName);
+        throw new Error("Fail to get location of " + attributeName);
     }
 
     public getUniformLocation(uniformName: string): WebGLUniformLocation {
@@ -82,7 +81,19 @@ export class ShaderProgram {
                 return location;
             }
         }
-        throw new Error("Fail to get location: " + uniformName);
+        throw new Error("Fail to get location of " + uniformName);
+    }
+
+    public setVertexArrayObject(attributeName: string, buffer: Buffer, size: number, type: number, normalized: boolean, stride: number, offset: number): void {
+        if (this.program) {
+            let location = this.getAttributeLocation(attributeName);
+            this.gl.enableVertexAttribArray(location);
+            buffer.bind();
+            this.gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
+            buffer.unbind();
+            return;
+        }
+        throw new Error("Fail to set VAO");
     }
 
     public cleanUp(): void {
