@@ -1,8 +1,8 @@
 export class Earth {
-    static get vertice() {
+    static get vertex() {
         if (!this.isInitialized)
             throw Error("Mesh is not initialized.");
-        return Earth._vertice;
+        return Earth._vertex;
     }
     static get normal() {
         if (!this.isInitialized)
@@ -36,7 +36,7 @@ export class Earth {
                 x = radius * nx;
                 y = radius * ny;
                 z = radius * nz;
-                this._vertice.push(x, y, z);
+                this._vertex.push(x, y, z);
                 this._normal.push(nx, ny, nz);
                 u = j / sectors;
                 v = i / stacks;
@@ -74,7 +74,7 @@ export class Earth {
         return ret;
     }
 }
-Earth._vertice = [];
+Earth._vertex = [];
 Earth._normal = [];
 Earth._texcoord = [];
 Earth._index = [];

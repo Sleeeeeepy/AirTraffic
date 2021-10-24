@@ -48,22 +48,5 @@ export class Buffer {
         this.gl.bindBuffer(this.bufferType, null);
         return;
     }
-    bindBaseWithName(program, name) {
-        if (this.buffer) {
-            this.gl.bindBufferBase(this.bufferType, this.getIndex(program, name), this.buffer);
-            return;
-        }
-        throw new Error("Fail to bind buffer base.");
-    }
-    bindBase(program, index) {
-        if (this.buffer) {
-            this.gl.bindBufferBase(this.bufferType, index, this.buffer);
-            return;
-        }
-        throw new Error("Fail to bind buffer base.");
-    }
-    getIndex(program, name) {
-        return this.gl.getUniformBlockIndex(program, name);
-    }
 }
 //# sourceMappingURL=Buffer.js.map

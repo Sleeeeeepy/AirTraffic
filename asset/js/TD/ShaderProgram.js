@@ -49,13 +49,12 @@ export class ShaderProgram {
         }
         throw new Error("Fail to use ShaderProgam " + this.name + ".");
     }
-    setAttribute(attributeName) {
+    getAttributeLocation(attributeName) {
         if (this.program) {
-            let vertexPositionAttribute = this.gl.getAttribLocation(this.program, attributeName);
-            this.gl.enableVertexAttribArray(vertexPositionAttribute);
-            return vertexPositionAttribute;
+            let location = this.gl.getAttribLocation(this.program, attributeName);
+            return location;
         }
-        throw new Error("Fail to set " + attributeName);
+        throw new Error("Fail to get location of " + attributeName);
     }
     getUniformLocation(uniformName) {
         if (this.program) {
@@ -64,7 +63,18 @@ export class ShaderProgram {
                 return location;
             }
         }
-        throw new Error("Fail to get location: " + uniformName);
+        throw new Error("Fail to get location of " + uniformName);
+    }
+    setVertexArrayObject(attributeName, buffer, size, type, normalized, stride, offset) {
+        if (this.program) {
+            let location = this.getAttributeLocation(attributeName);
+            this.gl.enableVertexAttribArray(location);
+            buffer.bind();
+            this.gl.vertexAttribPointer(location, size, type, normalized, stride, offset);
+            buffer.unbind();
+            return;
+        }
+        throw new Error("Fail to set VAO");
     }
     cleanUp() {
         if (this.shaders && this.shaders.length != 0 && this.program) {

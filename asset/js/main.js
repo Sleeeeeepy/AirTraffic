@@ -14,11 +14,11 @@ function main() {
     Earth.create(1.0, 36, 36);
     let vshader = new Shader("earth.vert", gl.VERTEX_SHADER);
     let fshader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
-    let prog = new ShaderProgram("shader");
+    let prog = new ShaderProgram("earth");
     let cprog = prog.getShaderProgram(vshader, fshader);
     prog.use();
     let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    vertexBuffer.upload(new Float32Array(Earth.vertice));
+    vertexBuffer.upload(new Float32Array(Earth.vertex));
     vertexBuffer.unbind();
     let indexBuffer = new Buffer(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
     indexBuffer.uploadUShort(new Uint16Array(Earth.index));
@@ -27,12 +27,10 @@ function main() {
     uvBuffer.upload(new Float32Array(Earth.texcoord));
     uvBuffer.unbind();
     vertexBuffer.bind();
-    let vertexPositionAttribute = gl.getAttribLocation(cprog, "vPosition");
-    gl.enableVertexAttribArray(vertexPositionAttribute);
-    gl.vertexAttribPointer(vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+    prog.setVertexArrayObject("vPosition", vertexBuffer, 3, gl.FLOAT, false, 0, 0);
     vertexBuffer.unbind();
     uvBuffer.bind();
-    let uvAttrb = prog.setAttribute("vinTexturecoord");
+    let uvAttrb = prog.getAttributeLocation("vinTexturecoord");
     gl.enableVertexAttribArray(uvAttrb);
     gl.vertexAttribPointer(uvAttrb, 2, gl.FLOAT, false, 0, 0);
     uvBuffer.unbind();
@@ -41,11 +39,11 @@ function main() {
     gl.bindTexture(gl.TEXTURE_2D, texture.getWebGLTexture());
     indexBuffer.bind();
     let orbitRadius = 100;
-    let zoom = 0.5;
+    let zoom = 0.7;
     let pov = Math.PI / 3;
     let aspect = 1.0;
     let camera = new Camera(pov, aspect, 0.1, 2000);
-    function initCamera(radian, axis) {
+    function initCamera(radian, axis, prog) {
         let cameraMatrix = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -71,13 +69,12 @@ function main() {
         let uict = prog.getUniformLocation("uCameraMatrix");
         gl.uniformMatrix4fv(uict, false, cameraMatrix.all());
     }
-    let cam = initCamera(Math.PI / 2, new vec3([1, 0, 0]));
+    let cam = initCamera(Math.PI / 2, new vec3([1, 0, 0]), prog);
     draw();
     var tick = setInterval(function () {
-        camRotateZ(cam, Math.PI / 720);
         camRotateX(cam, -Math.PI / 360);
         draw();
-    }, 10);
+    }, 100);
 }
 function initGL(gl) {
     gl.enable(gl.DEPTH_TEST);
