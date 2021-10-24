@@ -1,14 +1,14 @@
 export class Earth {
-    private static _vertice: number[] = [];
+    private static _vertex: number[] = [];
     private static _normal: number[] = [];
     private static _texcoord: number[] = [];
     private static _index: number[] = [];
     private static isInitialized: boolean = false;
 
-    public static get vertice(): number[] {
+    public static get vertex(): number[] {
         if (!this.isInitialized)
             throw Error("Mesh is not initialized.");
-        return Earth._vertice;
+        return Earth._vertex;
     }
 
     public static get normal(): number[] {
@@ -50,7 +50,7 @@ export class Earth {
                 y = radius * ny;
                 z = radius * nz;
 
-                this._vertice.push(x, y, z);
+                this._vertex.push(x, y, z);
                 this._normal.push(nx, ny, nz);
 
                 u = j / sectors;
