@@ -33,15 +33,18 @@ void main(void) {
 }        
         </script>
         <script type="x-shader/x-vertex" id="flight.vert">#version 300 es
-
+layout(location = 0) in vec3 vPosition;
+uniform mat4 uCameraMatrix;
+void main(void) {
+    gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
+    gl_PointSize = 5.0;
+}
         </script>
         <script type="x-shader/x-fragment" id="flight.frag">#version 300 es
 precision mediump float;
-in vec2 voutTexturecoord;
-uniform sampler2D texture;
 out vec4 Color;
 void main(void) {
-    Color = texture2D(texture, voutTexturecoord);
+    Color = vec4(1.0, 0.0, 0.0, 1.0);
 }
         </script>
         <script src="./asset/js/main.js" type="module"></script>
