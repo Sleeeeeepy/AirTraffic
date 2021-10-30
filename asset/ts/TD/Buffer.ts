@@ -12,7 +12,7 @@ export class Buffer {
         this.create();
     }
 
-    public create(): void {
+    private create(): void {
         let _buf = this.gl.createBuffer();
         if (_buf) {
             this.buffer = _buf;
