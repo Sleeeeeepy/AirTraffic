@@ -80,14 +80,16 @@ export class Earth {
        }
     }
 
-    public static pointAt(radius: number, lon: number, lat: number): any[] {
+    public static pointAt(radius: number, lat: number, lon: number): any[] {
         let ret = [];
+        lat += 180;
         let latRad = lat * (Math.PI / 180);
-        let lonRad= -lon * (Math.PI / 180);
+        let lonRad = lon * (Math.PI / 180);
         let x = Math.cos(latRad) * Math.cos(lonRad) * radius;
-        let y = Math.sin(latRad) * radius;
-        let z = Math.cos(latRad) * Math.sin(lonRad) * radius
+        let y = Math.cos(lonRad) * Math.sin(latRad) * radius;
+        let z = Math.sin(lonRad) * radius;
         ret.push(x,y,z);
+        console.log(ret);
         return ret;
     }
 }
