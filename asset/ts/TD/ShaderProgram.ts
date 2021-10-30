@@ -8,10 +8,31 @@ export class ShaderProgram {
     private program?: WebGLProgram;
     private shaders?: Shader[] | null;
 
-    public constructor(name: string) {
+    public constructor(name: string, vertexShader: Shader, fragmentShader: Shader) {
         this.name = name;
+        this.create(vertexShader, fragmentShader);
     }
 
+    private create(...shaders: Shader[]) {
+        this.init();
+        this.shaders = shaders;
+
+        for (let i = 0; i < shaders.length; i++) {
+            let shader = shaders[i];
+            let gl_shader = shader.create();
+            if (shader.isCreated) {
+                this.attach(gl_shader);
+            }
+        }
+
+        this.link();
+
+        if (this.program) {
+            return this.program;
+        }
+
+        throw new Error("Fail to get ShaderProgam " + this.name + ".");
+    }
     private attach(shader: WebGLShader): void {
         if (this.program) {
             this.gl.attachShader(this.program, shader);
@@ -37,25 +58,11 @@ export class ShaderProgram {
         throw new Error("Fail to initialize shader program.");
     }
 
-    public getShaderProgram(...shaders: Shader[]): WebGLProgram {
-        this.init();
-        this.shaders = shaders;
-
-        for (let i = 0; i < shaders.length; i++) {
-            let shader = shaders[i];
-            let gl_shader = shader.create();
-            if (shader.isCreated) {
-                this.attach(gl_shader);
-            }
-        }
-
-        this.link();
-
+    public get WebGLProgram(): WebGLProgram {
         if (this.program) {
             return this.program;
         }
-
-        throw new Error("Fail to get ShaderProgam " + this.name + ".");
+        throw new Error("Fail to get shader program " + this.name + ".");
     }
 
     public use() {
@@ -68,6 +75,7 @@ export class ShaderProgram {
 
     public getAttributeLocation(attributeName: string): number {
         if (this.program) {
+            this.gl.useProgram(this.program);
             let location = this.gl.getAttribLocation(this.program, attributeName);
             return location;
         }
@@ -76,6 +84,7 @@ export class ShaderProgram {
 
     public getUniformLocation(uniformName: string): WebGLUniformLocation {
         if (this.program) {
+            this.gl.useProgram(this.program);
             let location = this.gl.getUniformLocation(this.program, uniformName);
             if (location) {
                 return location;
