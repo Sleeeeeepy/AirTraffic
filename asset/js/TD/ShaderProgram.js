@@ -1,8 +1,25 @@
 import { GL } from './GL.js';
 export class ShaderProgram {
-    constructor(name) {
+    constructor(name, vertexShader, fragmentShader) {
         this.gl = GL.instance;
         this.name = name;
+        this.create(vertexShader, fragmentShader);
+    }
+    create(...shaders) {
+        this.init();
+        this.shaders = shaders;
+        for (let i = 0; i < shaders.length; i++) {
+            let shader = shaders[i];
+            let gl_shader = shader.create();
+            if (shader.isCreated) {
+                this.attach(gl_shader);
+            }
+        }
+        this.link();
+        if (this.program) {
+            return this.program;
+        }
+        throw new Error("Fail to get ShaderProgam " + this.name + ".");
     }
     attach(shader) {
         if (this.program) {
@@ -26,21 +43,11 @@ export class ShaderProgram {
         }
         throw new Error("Fail to initialize shader program.");
     }
-    getShaderProgram(...shaders) {
-        this.init();
-        this.shaders = shaders;
-        for (let i = 0; i < shaders.length; i++) {
-            let shader = shaders[i];
-            let gl_shader = shader.create();
-            if (shader.isCreated) {
-                this.attach(gl_shader);
-            }
-        }
-        this.link();
+    get WebGLProgram() {
         if (this.program) {
             return this.program;
         }
-        throw new Error("Fail to get ShaderProgam " + this.name + ".");
+        throw new Error("Fail to get shader program " + this.name + ".");
     }
     use() {
         if (this.program) {
@@ -51,6 +58,7 @@ export class ShaderProgram {
     }
     getAttributeLocation(attributeName) {
         if (this.program) {
+            this.gl.useProgram(this.program);
             let location = this.gl.getAttribLocation(this.program, attributeName);
             return location;
         }
@@ -58,6 +66,7 @@ export class ShaderProgram {
     }
     getUniformLocation(uniformName) {
         if (this.program) {
+            this.gl.useProgram(this.program);
             let location = this.gl.getUniformLocation(this.program, uniformName);
             if (location) {
                 return location;

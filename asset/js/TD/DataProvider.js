@@ -2,6 +2,7 @@ export class DataProvider {
     static getDataFromWeb(url) {
         fetch(url).then((res) => {
             if (res.ok) {
+                console.log(res.text);
                 return res.text;
             }
             else {
