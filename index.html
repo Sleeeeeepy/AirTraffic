@@ -17,13 +17,16 @@ out vec3 voutColor;
 out vec2 voutTexturecoord;
 void main(void) {
     gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
-    gl_PointSize = 3.0;
     voutColor = vPosition;
     voutTexturecoord = vinTexturecoord;
  }
         </script>
         <script type="x-shader/x-fragment" id="earth.frag">#version 300 es
-precision mediump float;
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+#else
+    precision mediump float;
+#endif
 in vec3 voutColor;
 in vec2 voutTexturecoord;
 uniform sampler2D uTexture;
@@ -33,15 +36,19 @@ void main(void) {
 }        
         </script>
         <script type="x-shader/x-vertex" id="flight.vert">#version 300 es
-layout(location = 0) in vec3 vPosition;
+layout(location = 5) in vec3 vPosition;
 uniform mat4 uCameraMatrix;
 void main(void) {
     gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
-    gl_PointSize = 5.0;
+    gl_PointSize = 10.0;
 }
         </script>
         <script type="x-shader/x-fragment" id="flight.frag">#version 300 es
-precision mediump float;
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+#else
+    precision mediump float;
+#endif
 out vec4 Color;
 void main(void) {
     Color = vec4(1.0, 0.0, 0.0, 1.0);
