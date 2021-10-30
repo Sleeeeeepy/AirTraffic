@@ -2,11 +2,12 @@ export class DataProvider {
     private static getDataFromWeb(url: string): string | any {
         fetch(url).then((res) => {
             if (res.ok) {
+                console.log(res.text);
                 return res.text;
             } else {
                 return null;
             }
-        })
+        });
     }
 
     public static getJsonObject(url: string): any {
