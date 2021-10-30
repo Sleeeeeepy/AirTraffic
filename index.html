@@ -40,7 +40,7 @@ layout(location = 5) in vec3 vPosition;
 uniform mat4 uCameraMatrix;
 void main(void) {
     gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
-    gl_PointSize = 10.0;
+    gl_PointSize = 5.0;
 }
         </script>
         <script type="x-shader/x-fragment" id="flight.frag">#version 300 es
