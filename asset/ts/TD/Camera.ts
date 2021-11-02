@@ -10,13 +10,27 @@ export class Camera {
     private _fov: number;
     private _orbit: number = 100;
     private _zoom: number = 1.0;
+    private _cameraMatrix: mat4;
+    private _rotateMatrix: mat4;
+    private static readonly _xAxis: vec3 = new vec3([1, 0, 0]);
+    private static readonly _yAxis: vec3 = new vec3([0, 1, 0]);
+    private static readonly _zAxis: vec3 = new vec3([0, 0, 1]);
 
-    public constructor(pov: number, aspect: number, near: number, far: number) {
+    public constructor(fov: number, aspect: number, near: number, far: number, orbit: number, zoom: number) {
         this._aspect = aspect;
         this._near = near;
         this._far = far;
-        this._fov = pov;
-        this._proMatrix = mat4.perspective(pov, aspect, near, far);
+        this._fov = fov;
+        this._proMatrix = mat4.perspective(fov, aspect, near, far);
+        this._rotateMatrix = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+        this._orbit = orbit;
+        this._zoom = zoom;
+        this._cameraMatrix = this.initCameraMatrix(Math.PI / 2, new vec3([1, 0, 0]));
     }
 
     public get aspect(): number {
@@ -73,9 +87,18 @@ export class Camera {
 
     public set zoom(value: number) {
         this._zoom = value;
+        this._cameraMatrix = this.initCameraMatrix(Math.PI / 2, new vec3([1, 0, 0]));
     }
 
-    public getCameraMatrix(radian: number, axis: vec3): mat4 {
+    public get cameraMatrix() {
+        return this._cameraMatrix;
+    }
+
+    public get rotateMatrix() {
+        return this._rotateMatrix;
+    }
+
+    private initCameraMatrix(radian: number, axis: vec3): mat4 {
         let cameraMatrix = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -84,8 +107,20 @@ export class Camera {
         cameraMatrix.rotate(radian, axis);
         cameraMatrix.translate(new vec3([0, 0, this._orbit / this._zoom]));
         let InverseCameraTransform = cameraMatrix.copy().inverse();
-        let CameraProjection = this._proMatrix;
+        let CameraProjection = this._proMatrix.copy();
         let uCameraMatrix = CameraProjection.multiply(InverseCameraTransform);
         return uCameraMatrix;
+    }
+
+    public RotateX(radian: number) {
+        this._rotateMatrix.rotate(radian, Camera._xAxis);
+    }
+
+    public RotateY(radian: number) {
+        this._rotateMatrix.rotate(radian, Camera._yAxis);
+    }
+
+    public RotateZ(radian: number) {
+        this._rotateMatrix.rotate(radian, Camera._zAxis);
     }
 }

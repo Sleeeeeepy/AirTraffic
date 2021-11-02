@@ -51,47 +51,34 @@ function main() {
     prog.setVertexArrayObject("vinTexturecoord", uvBuffer, 2, gl.FLOAT, false, 0, 0);
     uvBuffer.unbind();
 
-    //텍스쳐 설정
-    let texture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
-    gl.uniform1i(prog.getUniformLocation("uTexture"), 0);
-    gl.bindTexture(gl.TEXTURE_2D, texture.getWebGLTexture());
+    //낮 텍스처 설정
+    let dayTexture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
+    gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
+
+    //밤 텍스처 설정
+    /*
+    let nightTexture = new Texture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
+    gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
+    */
+    //구름 텍스처 설정
+    /*
+    let cloudTexture = new Texture("", gl.TEXTURE2);
+    gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
+    */
 
     //인덱스 버퍼 바인드
     indexBuffer.bind();
 
     // 카메라 설정
     let orbitRadius = 100;
-    let zoom = 0.7;
+    let zoom = 0.5;
     let fov = Math.PI / 3
     let aspect = 1.0;
-    let camera = new Camera(fov, aspect, 0.1, 2000);
-    function initCamera(radian: number, axis: vec3, prog: ShaderProgram): mat4 {
-        let cameraMatrix = new mat4([
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1]);
-        cameraMatrix.rotate(radian, axis);
-        cameraMatrix.translate(new vec3([0, 0, orbitRadius / zoom]));
-        let InverseCameraTransform = cameraMatrix.copy().inverse();
-        let CameraProjection = camera.proMatrix;
-        let uCameraMatrix = CameraProjection.multiply(InverseCameraTransform);
-        let uict = prog.getUniformLocation("uCameraMatrix");
-        gl.uniformMatrix4fv(uict, false, uCameraMatrix.all());
-        return uCameraMatrix;
-    }
+    let camera = new Camera(fov, aspect, 0.1, 2000, orbitRadius, zoom);
+    let cam = camera.cameraMatrix;
+    gl.uniformMatrix4fv(prog.getUniformLocation("uCameraMatrix"), false, cam.all());
 
-    function camRotateZ(cameraMatrix: mat4, radian: number) {
-        cameraMatrix.rotate(radian, new vec3([0, 0, 1]));
-    }
-
-    function camRotateX(cameraMatrix: mat4, radian: number) {
-        cameraMatrix.rotate(radian, new vec3([0, 1, 0]));
-    }
-
-    let cam = initCamera(Math.PI / 2, new vec3([1, 0, 0]), prog);
-    drawEarth(indexBuffer, prog);
-
+    //점 설정
     let fvshader = new Shader("flight.vert", gl.VERTEX_SHADER);
     let ffshader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
     let fprog = new ShaderProgram("flight", fvshader, ffshader);
@@ -101,40 +88,36 @@ function main() {
     let melbourne = Earth.pointAt(1.01, 144, -37);
     let seoul = Earth.pointAt(1.01, 126, 37);
     let tokyo = Earth.pointAt(1.01, 139, 35);
-    let newyork = Earth.pointAt(1.01, -73, 40);
+    let newyork = Earth.pointAt(1.01, -73, 40); 
+    let losAngeles = Earth.pointAt(1.01, -118, 34);
     let origin = Earth.pointAt(1.01, 0, 0);
-    let points = melbourne.concat(seoul, tokyo, newyork, origin);
-    console.log(points);
+    let points = melbourne.concat(seoul, tokyo, newyork, origin, losAngeles);
     fvbo.upload(new Float32Array(points));
     fvbo.bind();
-    
-    let uict = fprog.getUniformLocation("uCameraMatrix");
-    gl.uniformMatrix4fv(uict, false, cam.all());
+
+    gl.uniformMatrix4fv(fprog.getUniformLocation("uCameraMatrix"), false, cam.all());
     
     let ptr = fprog.getAttributeLocation("vPosition");
     gl.enableVertexAttribArray(ptr);
     gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.POINTS, 0, 5);
+    gl.drawArrays(gl.POINTS, 0, 6);
     
     //카메라를 회전시키는 임시 코드
     var tick = setInterval(function () {
-        camRotateZ(cam, Math.PI / 100);
-        //camRotateX(cam, -Math.PI / 360);
-        let uict = fprog.getUniformLocation("uCameraMatrix");
-        gl.uniformMatrix4fv(uict, false, cam.all());
-        uict = prog.getUniformLocation("uCameraMatrix");
-        gl.uniformMatrix4fv(uict, false, cam.all());
+        camera.RotateZ(Math.PI/100);
+        let uict = fprog.getUniformLocation("uCameraRotateMatrix");
+        gl.uniformMatrix4fv(uict, false, camera.rotateMatrix.all());
+        uict = prog.getUniformLocation("uCameraRotateMatrix");
+        gl.uniformMatrix4fv(uict, false, camera.rotateMatrix.all());
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         drawEarth(indexBuffer, prog);
         drawPoint(fvbo, fprog);
-    }, 100);
+    }, 10);
     
 }
 
 function initGL(gl: WebGLRenderingContext) {
-    //gl.viewport(0, 0, canvas.width, canvas.height);
     gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
@@ -150,5 +133,5 @@ function drawPoint(buffer: Buffer, program: ShaderProgram) {
     const gl = GL.instance;
     program.use();
     buffer.bind();
-    gl.drawArrays(gl.POINTS, 0, 5);
+    gl.drawArrays(gl.POINTS, 0, 6);
 }
