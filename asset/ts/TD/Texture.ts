@@ -34,7 +34,6 @@ export class Texture {
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
             this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.image);
-            //this.gl.bindTexture(this.gl.TEXTURE_2D, null);
             return;
         }
         throw new Error("Fail to create texture.");
@@ -50,6 +49,12 @@ export class Texture {
     public bind(): void {
         if (this.textrue) {
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.textrue);
+        }
+    }
+
+    public unbind(): void {
+        if (this.textrue) {
+            this.gl.bindTexture(this.gl.TEXTURE_2D, null);
         }
     }
 }
