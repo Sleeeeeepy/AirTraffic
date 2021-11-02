@@ -89,7 +89,6 @@ export class Earth {
         let y = Math.cos(lonRad) * Math.sin(latRad) * radius;
         let z = Math.sin(lonRad) * radius;
         ret.push(x,y,z);
-        console.log(ret);
         return ret;
     }
 }
