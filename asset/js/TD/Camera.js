@@ -1,14 +1,23 @@
 import mat4 from '../tsm/mat4.js';
 import vec3 from '../tsm/vec3.js';
 export class Camera {
-    constructor(pov, aspect, near, far) {
+    constructor(fov, aspect, near, far, orbit, zoom) {
         this._orbit = 100;
         this._zoom = 1.0;
         this._aspect = aspect;
         this._near = near;
         this._far = far;
-        this._fov = pov;
-        this._proMatrix = mat4.perspective(pov, aspect, near, far);
+        this._fov = fov;
+        this._proMatrix = mat4.perspective(fov, aspect, near, far);
+        this._rotateMatrix = new mat4([
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+        ]);
+        this._orbit = orbit;
+        this._zoom = zoom;
+        this._cameraMatrix = this.initCameraMatrix(Math.PI / 2, new vec3([1, 0, 0]));
     }
     get aspect() {
         return this._aspect;
@@ -52,8 +61,15 @@ export class Camera {
     }
     set zoom(value) {
         this._zoom = value;
+        this._cameraMatrix = this.initCameraMatrix(Math.PI / 2, new vec3([1, 0, 0]));
     }
-    getCameraMatrix(radian, axis) {
+    get cameraMatrix() {
+        return this._cameraMatrix;
+    }
+    get rotateMatrix() {
+        return this._rotateMatrix;
+    }
+    initCameraMatrix(radian, axis) {
         let cameraMatrix = new mat4([
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -63,9 +79,21 @@ export class Camera {
         cameraMatrix.rotate(radian, axis);
         cameraMatrix.translate(new vec3([0, 0, this._orbit / this._zoom]));
         let InverseCameraTransform = cameraMatrix.copy().inverse();
-        let CameraProjection = this._proMatrix;
+        let CameraProjection = this._proMatrix.copy();
         let uCameraMatrix = CameraProjection.multiply(InverseCameraTransform);
         return uCameraMatrix;
     }
+    RotateX(radian) {
+        this._rotateMatrix.rotate(radian, Camera._xAxis);
+    }
+    RotateY(radian) {
+        this._rotateMatrix.rotate(radian, Camera._yAxis);
+    }
+    RotateZ(radian) {
+        this._rotateMatrix.rotate(radian, Camera._zAxis);
+    }
 }
+Camera._xAxis = new vec3([1, 0, 0]);
+Camera._yAxis = new vec3([0, 1, 0]);
+Camera._zAxis = new vec3([0, 0, 1]);
 //# sourceMappingURL=Camera.js.map

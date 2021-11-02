@@ -42,5 +42,10 @@ export class Texture {
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.textrue);
         }
     }
+    unbind() {
+        if (this.textrue) {
+            this.gl.bindTexture(this.gl.TEXTURE_2D, null);
+        }
+    }
 }
 //# sourceMappingURL=Texture.js.map
