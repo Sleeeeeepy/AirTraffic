@@ -1,20 +1,19 @@
 export class DataProvider {
-    private static getDataFromWeb(url: string): string | any {
-        fetch(url).then((res) => {
-            if (res.ok) {
-                console.log(res.text);
-                return res.text;
-            } else {
-                return null;
-            }
-        });
+    public static async getJson(url: string) {
+        let response = await fetch(url);
+        if (response.ok) {
+            let json = await response.json();
+            return json;
+        } else {
+            throw new Error("Fail to fetch json data.");
+        }
     }
 
-    public static getJsonObject(url: string): any {
-        let json = this.getDataFromWeb(url);
-        if (json) {
-            return JSON.parse(json);
+    public static async getImage(url:string) {
+        let response = await fetch(url, {mode: 'no-cors'});
+        if (response.ok) {
+            let image = await response.blob();
+            return URL.createObjectURL(image);
         }
-        throw new Error("Json error.");
     }
 }
