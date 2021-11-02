@@ -13,10 +13,11 @@
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec2 vinTexturecoord;
 uniform mat4 uCameraMatrix;
+uniform mat4 uCameraRotateMatrix;
 out vec3 voutColor;
 out vec2 voutTexturecoord;
 void main(void) {
-    gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
+    gl_Position = uCameraMatrix * uCameraRotateMatrix * vec4(vPosition, 1.0);
     voutColor = vPosition;
     voutTexturecoord = vinTexturecoord;
  }
@@ -29,17 +30,25 @@ void main(void) {
 #endif
 in vec3 voutColor;
 in vec2 voutTexturecoord;
-uniform sampler2D uTexture;
+uniform sampler2D uDayTexture;
+//uniform sampler2D uNightTexture;
+//uniform sampler2D uCloudTexture;
+
 out vec4 Color;
 void main(void) {
-    Color = texture(uTexture, voutTexturecoord);
+    //vec3 day = texture2D(uDayTexture, voutTexturecoord).rgb;
+    //vec3 night = texture2D(uNightTexture, voutTexturecoord).rgb;
+    //vec3 cloud = texture2D(uCloudTexture, voutTexturecoord).rgb;
+    
+    Color = texture(uDayTexture, voutTexturecoord);
 }        
         </script>
         <script type="x-shader/x-vertex" id="flight.vert">#version 300 es
 layout(location = 5) in vec3 vPosition;
 uniform mat4 uCameraMatrix;
+uniform mat4 uCameraRotateMatrix;
 void main(void) {
-    gl_Position = uCameraMatrix * vec4(vPosition, 1.0);
+    gl_Position = uCameraMatrix * uCameraRotateMatrix * vec4(vPosition, 1.0);
     gl_PointSize = 5.0;
 }
         </script>
