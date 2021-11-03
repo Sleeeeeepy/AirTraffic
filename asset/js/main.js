@@ -1,14 +1,17 @@
+import { ArrayRenderer } from './TD/ArrayRenderer.js';
 import { Buffer } from './TD/Buffer.js';
 import { Camera } from './TD/Camera.js';
 import { Earth } from './TD/Earth.js';
+import { ElementRenderer } from './TD/ElementRenderer.js';
 import { GL } from './TD/GL.js';
+import { Renderer } from './TD/Renderer.js';
 import { Shader } from './TD/Shader.js';
 import { ShaderProgram } from './TD/ShaderProgram.js';
 import { Texture } from './TD/Texture.js';
 main();
 function main() {
     const gl = GL.instance;
-    initGL(gl);
+    initGL();
     Earth.create(1.0, 36, 36);
     let vshader = new Shader("earth.vert", gl.VERTEX_SHADER);
     let fshader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
@@ -36,7 +39,7 @@ function main() {
     let zoom = 0.5;
     let fov = Math.PI / 3;
     let aspect = 1.0;
-    let camera = new Camera(fov, aspect, 0.1, 2000, orbitRadius, zoom);
+    let camera = new Camera(fov, aspect, 0.1, 200, orbitRadius, zoom);
     let cam = camera.cameraMatrix;
     gl.uniformMatrix4fv(prog.getUniformLocation("uCameraMatrix"), false, cam.all());
     let fvshader = new Shader("flight.vert", gl.VERTEX_SHADER);
@@ -44,13 +47,7 @@ function main() {
     let fprog = new ShaderProgram("flight", fvshader, ffshader);
     fprog.use();
     let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    let melbourne = Earth.pointAt(1.01, 144, -37);
-    let seoul = Earth.pointAt(1.01, 126, 37);
-    let tokyo = Earth.pointAt(1.01, 139, 35);
-    let newyork = Earth.pointAt(1.01, -73, 40);
-    let losAngeles = Earth.pointAt(1.01, -118, 34);
-    let origin = Earth.pointAt(1.01, 0, 0);
-    let points = melbourne.concat(seoul, tokyo, newyork, origin, losAngeles);
+    let points = exampleCode();
     fvbo.upload(new Float32Array(points));
     fvbo.bind();
     gl.uniformMatrix4fv(fprog.getUniformLocation("uCameraMatrix"), false, cam.all());
@@ -58,32 +55,39 @@ function main() {
     gl.enableVertexAttribArray(ptr);
     gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.POINTS, 0, 6);
-    var tick = setInterval(function () {
-        camera.RotateZ(Math.PI / 100);
-        let uict = fprog.getUniformLocation("uCameraRotateMatrix");
-        gl.uniformMatrix4fv(uict, false, camera.rotateMatrix.all());
-        uict = prog.getUniformLocation("uCameraRotateMatrix");
-        gl.uniformMatrix4fv(uict, false, camera.rotateMatrix.all());
+    function clear() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        drawEarth(indexBuffer, prog);
-        drawPoint(fvbo, fprog);
-    }, 10);
+    }
+    function rotate() {
+        camera.RotateZ(Math.PI / 360);
+    }
+    function drawEarth() {
+        gl.enable(gl.DEPTH_TEST);
+        gl.uniformMatrix4fv(prog.getUniformLocation("uCameraRotateMatrix"), false, camera.rotateMatrix.all());
+    }
+    function drawPoint() {
+        gl.disable(gl.DEPTH_TEST);
+        gl.uniformMatrix4fv(fprog.getUniformLocation("uCameraRotateMatrix"), false, camera.rotateMatrix.all());
+    }
+    let scene = new Renderer(clear, rotate);
+    scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, drawEarth));
+    scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
+    scene.requestAnimation();
 }
-function initGL(gl) {
+function initGL() {
+    const gl = GL.instance;
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
-function drawEarth(buffer, program) {
-    const gl = GL.instance;
-    program.use();
-    buffer.bind();
-    gl.drawElements(gl.TRIANGLE_STRIP, Earth.index.length, gl.UNSIGNED_SHORT, 0);
-}
-function drawPoint(buffer, program) {
-    const gl = GL.instance;
-    program.use();
-    buffer.bind();
-    gl.drawArrays(gl.POINTS, 0, 6);
+function exampleCode() {
+    let melbourne = Earth.pointAt(1.0, 144, -37);
+    let seoul = Earth.pointAt(1.0, 126, 37);
+    let tokyo = Earth.pointAt(1.0, 139, 35);
+    let newyork = Earth.pointAt(1.0, -73, 40);
+    let losAngeles = Earth.pointAt(1.0, -118, 34);
+    let origin = Earth.pointAt(1.0, 0, 0);
+    let points = melbourne.concat(seoul, tokyo, newyork, origin, losAngeles);
+    return points;
 }
 //# sourceMappingURL=main.js.map

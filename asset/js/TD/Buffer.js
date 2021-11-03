@@ -2,6 +2,7 @@ import { GL } from './GL.js';
 export class Buffer {
     constructor(bufferType, drawHint = GL.instance.DYNAMIC_DRAW) {
         this.gl = GL.instance;
+        this.lastLength = 0;
         this.bufferType = bufferType;
         this.drawHint = drawHint;
         this.create();
@@ -25,6 +26,7 @@ export class Buffer {
         if (this.buffer && data) {
             this.gl.bindBuffer(this.bufferType, this.buffer);
             this.gl.bufferData(this.bufferType, data, this.drawHint);
+            this.lastLength = data.length;
             return;
         }
         throw new Error("Fail to upload data to GPU.");
@@ -33,6 +35,7 @@ export class Buffer {
         if (this.buffer && data) {
             this.gl.bindBuffer(this.bufferType, this.buffer);
             this.gl.bufferData(this.bufferType, data, this.drawHint);
+            this.lastLength = data.length;
             return;
         }
         throw new Error("Fail to upload data to GPU.");
@@ -47,6 +50,9 @@ export class Buffer {
     unbind() {
         this.gl.bindBuffer(this.bufferType, null);
         return;
+    }
+    get length() {
+        return this.lastLength;
     }
 }
 //# sourceMappingURL=Buffer.js.map
