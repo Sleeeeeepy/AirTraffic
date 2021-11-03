@@ -5,6 +5,7 @@ export class Buffer {
     private buffer?: WebGLBuffer;
     private bufferType: number;
     private drawHint: number;
+    private lastLength: number = 0;
 
     public constructor(bufferType: number, drawHint: number = GL.instance.DYNAMIC_DRAW) {
         this.bufferType = bufferType;
@@ -33,6 +34,7 @@ export class Buffer {
         if (this.buffer && data) {
             this.gl.bindBuffer(this.bufferType, this.buffer);
             this.gl.bufferData(this.bufferType, data, this.drawHint);
+            this.lastLength = data.length;
             return;
         }
         throw new Error("Fail to upload data to GPU.");
@@ -42,6 +44,7 @@ export class Buffer {
         if (this.buffer && data) {
             this.gl.bindBuffer(this.bufferType, this.buffer);
             this.gl.bufferData(this.bufferType, data, this.drawHint);
+            this.lastLength = data.length;
             return;
         }
         throw new Error("Fail to upload data to GPU.");
@@ -58,6 +61,10 @@ export class Buffer {
     public unbind(): void {
         this.gl.bindBuffer(this.bufferType, null);
         return;
+    }
+
+    public get length() {
+        return this.lastLength;
     }
     /*
     public bindBaseWithName(program: WebGLProgram, name: string): void {
