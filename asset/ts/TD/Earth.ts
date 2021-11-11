@@ -91,4 +91,28 @@ export class Earth {
         ret.push(x,y,z);
         return ret;
     }
+
+    public static lightPos(lat: number): any[] {
+        let ret = [];
+        lat += 180;
+        let latRad = lat * (Math.PI / 180);
+        let x = Math.cos(latRad);
+        let y = Math.sin(latRad);
+        let z = 0;
+        ret.push(x,y,z);
+        return ret;
+    }
+
+    public static lightPosTime(epoch: number): any[] {
+        let date = new Date(epoch);
+        let h = date.getUTCHours();
+        let min = date.getUTCMinutes();
+        let sec = date.getUTCSeconds();
+
+        //빛이 위치한 곳은 오후 12시인데, 아래 계산식은 그리니치 천문대를 기준으로 이미 180도 회전한 상태이므로, 180도를 빼야 한다.
+        let degree = h *  15.0 + min * 0.25 + sec * 0.00417 - 180;
+        console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
+        console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
+        return this.lightPos(-degree);
+    }
 }
