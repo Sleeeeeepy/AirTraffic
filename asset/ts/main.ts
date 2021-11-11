@@ -12,22 +12,46 @@ import { Texture } from './TD/Texture.js';
 import mat4 from './tsm/mat4.js';
 import vec3 from './tsm/vec3.js';
 
-// entry point
+const gl = GL.instance;
+let isDebug = true;
+let dragging = false;
+let old_mouse_x: number
+let old_mouse_y: number;
+let rotate_mouse_x: number = 0
+let rotate_mouse_y: number = 0;
+let canvas = <HTMLCanvasElement>document.getElementById("gl_canvas");
+
+canvas?.addEventListener("mousedown", mouseDown, false);
+canvas?.addEventListener("mouseup", mouseUp, false);
+canvas?.addEventListener("mouseout", mouseUp, false);
+canvas?.addEventListener("mousemove", mouseMove, false);
+canvas?.addEventListener("wheel", mouseWheel, false);
+
+// 카메라 설정
+let orbitRadius = 100;
+let zoom = 0.5;
+let fov = Math.PI / 3
+let aspect = 1.0;
+let camera = new Camera(fov, aspect, 0.1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), true);
+
+// 지구 셰이더 생성
+let vshader = new Shader("earth.vert", gl.VERTEX_SHADER);
+let fshader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
+let prog = new ShaderProgram("earth", vshader, fshader);
+prog.use();
+
+// 점 셰이더 생성
+let fvshader = new Shader("flight.vert", gl.VERTEX_SHADER);
+let ffshader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
+let fprog = new ShaderProgram("flight", fvshader, ffshader);
+fprog.use();
+
 main();
 
 function main() {
     //초기 설정을 합니다.
-    const gl = GL.instance;
     initGL();
     Earth.create(1.0, 36, 36);
-
-    // 셰이더 객체 생성
-    let vshader = new Shader("earth.vert", gl.VERTEX_SHADER);
-    let fshader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
-
-    // 셰이더 프로그램 생성
-    let prog = new ShaderProgram("earth", vshader, fshader);
-    prog.use();
 
     // 버퍼에 정점 정보를 입력합니다.
     let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
@@ -44,6 +68,11 @@ function main() {
     uvBuffer.upload(new Float32Array(Earth.texcoord));
     uvBuffer.unbind();
 
+    // 버퍼에 정점의 노말벡터 정보를 입력합니다.
+    let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    normalBuffer.upload(new Float32Array(Earth.normal));
+    normalBuffer.unbind();
+
     // 정점 설정
     vertexBuffer.bind();
     prog.setVertexArrayObject("vPosition", vertexBuffer, 3, gl.FLOAT, false, 0, 0);
@@ -54,15 +83,24 @@ function main() {
     prog.setVertexArrayObject("vinTexturecoord", uvBuffer, 2, gl.FLOAT, false, 0, 0);
     uvBuffer.unbind();
 
+    // 노말벡터 설정
+    normalBuffer.bind();
+    prog.setVertexArrayObject("vinTextureNormal", normalBuffer, 3, gl.FLOAT, false, 0, 0);
+    normalBuffer.unbind();
+
     //낮 텍스처 설정
     let dayTexture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
     gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
 
     //밤 텍스처 설정
-    /*
     let nightTexture = new Texture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
     gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
-    */
+    
+    //let lightPos = Earth.lightPos(720);
+    let lightPos = Earth.lightPosTime(1636632000);
+    //빛 방향 설정
+    gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
+    gl.uniform3f(prog.getUniformLocation("uCameraLoc"), camera.cameraPosition!.at(0), camera.cameraPosition!.at(1), camera.cameraPosition!.at(2));
     //구름 텍스처 설정
     /*
     let cloudTexture = new Texture("", gl.TEXTURE2);
@@ -71,51 +109,17 @@ function main() {
 
     //인덱스 버퍼 바인드
     indexBuffer.bind();
-
-    // 카메라 설정
-    let orbitRadius = 100;
-    let zoom = 0.5;
-    let fov = Math.PI / 3
-    let aspect = 1.0;
-    let camera = new Camera(fov, aspect, 0.1, 200, orbitRadius, zoom);
-    let cam = camera.cameraMatrix;
-    gl.uniformMatrix4fv(prog.getUniformLocation("uCameraMatrix"), false, cam.all());
-
-    //점 설정
-    let fvshader = new Shader("flight.vert", gl.VERTEX_SHADER);
-    let ffshader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
-    let fprog = new ShaderProgram("flight", fvshader, ffshader);
-    fprog.use();
     
+    //점 설정
     let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     let points = exampleCode();
     fvbo.upload(new Float32Array(points));
     fvbo.bind();
-
-    gl.uniformMatrix4fv(fprog.getUniformLocation("uCameraMatrix"), false, cam.all());
     
     let ptr = fprog.getAttributeLocation("vPosition");
     gl.enableVertexAttribArray(ptr);
     gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.POINTS, 0, 6);
-
-    function clear() {
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    }
-
-    function rotate() {
-        camera.RotateZ(Math.PI/360);
-    }
-
-    function drawEarth() {
-        gl.enable(gl.DEPTH_TEST);
-        gl.uniformMatrix4fv(prog.getUniformLocation("uCameraRotateMatrix"), false, camera.rotateMatrix.all());
-    }
-
-    function drawPoint() {
-        gl.disable(gl.DEPTH_TEST);
-        gl.uniformMatrix4fv(fprog.getUniformLocation("uCameraRotateMatrix"), false, camera.rotateMatrix.all());
-    }
 
     let scene = new Renderer(clear, rotate);
     scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, drawEarth));
@@ -124,7 +128,6 @@ function main() {
 }
 
 function initGL() {
-    const gl = GL.instance;
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -139,4 +142,65 @@ function exampleCode() {
     let origin = Earth.pointAt(1.0, 0, 0);
     let points = melbourne.concat(seoul, tokyo, newyork, origin, losAngeles);
     return points;
+}
+
+function mouseDown(e: MouseEvent) {
+    dragging = true;
+    old_mouse_x = e.pageX;
+    old_mouse_y = e.pageY;
+    e.preventDefault();
+}
+
+function mouseUp(e: MouseEvent) {
+    dragging = false;
+    rotate_mouse_x = 0;
+    rotate_mouse_y = 0;
+    e.preventDefault();
+}
+
+function mouseMove(e: MouseEvent) {
+    if (!dragging)
+        return;
+    let dx = (e.pageX - old_mouse_x) / canvas.width;
+    let dy = (e.pageY - old_mouse_y) / canvas.height;
+    rotate_mouse_x += dx;
+    rotate_mouse_y += dy;
+    old_mouse_x = e.pageX;
+    old_mouse_y = e.pageY;
+    e.preventDefault();
+}
+
+function mouseWheel(e: WheelEvent) {
+    let move = e.deltaY * -0.001;
+    if (camera.zoom + move < 0.5) {
+        return;
+    }
+    if (camera.zoom + move > 3.0) {
+        return;
+    }
+    camera.zoom += e.deltaY * -0.001;
+    e.preventDefault();
+}
+
+function clear() {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+
+function rotate() {
+    //camera.RotateX(rotate_mouse_y);
+    camera.RotateZ(rotate_mouse_x);
+}
+
+function drawEarth() {
+    gl.enable(gl.DEPTH_TEST);
+    gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+    gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+    gl.uniformMatrix4fv(prog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+}
+
+function drawPoint() {
+    gl.disable(gl.DEPTH_TEST);
+    gl.uniformMatrix4fv(fprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+    gl.uniformMatrix4fv(fprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+    gl.uniformMatrix4fv(fprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
 }
