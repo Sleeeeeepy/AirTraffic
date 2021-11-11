@@ -74,6 +74,26 @@ export class Earth {
         ret.push(x, y, z);
         return ret;
     }
+    static lightPos(lat) {
+        let ret = [];
+        lat += 180;
+        let latRad = lat * (Math.PI / 180);
+        let x = Math.cos(latRad);
+        let y = Math.sin(latRad);
+        let z = 0;
+        ret.push(x, y, z);
+        return ret;
+    }
+    static lightPosTime(epoch) {
+        let date = new Date(epoch);
+        let h = date.getUTCHours();
+        let min = date.getUTCMinutes();
+        let sec = date.getUTCSeconds();
+        let degree = h * 15.0 + min * 0.25 + sec * 0.00417 - 180;
+        console.log("UTC", h, "시", min, "분", sec, "초", degree);
+        console.log("KST", date.getHours(), "시", date.getMinutes(), "분", date.getSeconds(), "초", degree);
+        return this.lightPos(-degree);
+    }
 }
 Earth._vertex = [];
 Earth._normal = [];
