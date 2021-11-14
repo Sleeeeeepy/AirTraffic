@@ -1,6 +1,16 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 import { ArrayRenderer } from './TD/ArrayRenderer.js';
 import { Buffer } from './TD/Buffer.js';
 import { Camera } from './TD/Camera.js';
+import { DataProvider } from './TD/DataProvider.js';
 import { Earth } from './TD/Earth.js';
 import { ElementRenderer } from './TD/ElementRenderer.js';
 import { GL } from './TD/GL.js';
@@ -10,7 +20,7 @@ import { ShaderProgram } from './TD/ShaderProgram.js';
 import { Texture } from './TD/Texture.js';
 import vec3 from './tsm/vec3.js';
 const gl = GL.instance;
-let isDebug = true;
+let isDebug = false;
 let dragging = false;
 let old_mouse_x;
 let old_mouse_y;
@@ -37,49 +47,68 @@ let fprog = new ShaderProgram("flight", fvshader, ffshader);
 fprog.use();
 main();
 function main() {
-    initGL();
-    Earth.create(1.0, 36, 36);
-    let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    vertexBuffer.upload(new Float32Array(Earth.vertex));
-    vertexBuffer.unbind();
-    let indexBuffer = new Buffer(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
-    indexBuffer.uploadUShort(new Uint16Array(Earth.index));
-    indexBuffer.unbind();
-    let uvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    uvBuffer.upload(new Float32Array(Earth.texcoord));
-    uvBuffer.unbind();
-    let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    normalBuffer.upload(new Float32Array(Earth.normal));
-    normalBuffer.unbind();
-    vertexBuffer.bind();
-    prog.setVertexArrayObject("vPosition", vertexBuffer, 3, gl.FLOAT, false, 0, 0);
-    vertexBuffer.unbind();
-    uvBuffer.bind();
-    prog.setVertexArrayObject("vinTexturecoord", uvBuffer, 2, gl.FLOAT, false, 0, 0);
-    uvBuffer.unbind();
-    normalBuffer.bind();
-    prog.setVertexArrayObject("vinTextureNormal", normalBuffer, 3, gl.FLOAT, false, 0, 0);
-    normalBuffer.unbind();
-    let dayTexture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
-    gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
-    let nightTexture = new Texture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
-    gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
-    let lightPos = Earth.lightPosTime(1636632000);
-    gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
-    gl.uniform3f(prog.getUniformLocation("uCameraLoc"), camera.cameraPosition.at(0), camera.cameraPosition.at(1), camera.cameraPosition.at(2));
-    indexBuffer.bind();
-    let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    let points = exampleCode();
-    fvbo.upload(new Float32Array(points));
-    fvbo.bind();
-    let ptr = fprog.getAttributeLocation("vPosition");
-    gl.enableVertexAttribArray(ptr);
-    gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.POINTS, 0, 6);
-    let scene = new Renderer(clear, rotate);
-    scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, drawEarth));
-    scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
-    scene.requestAnimation();
+    return __awaiter(this, void 0, void 0, function* () {
+        initGL();
+        Earth.create(1.0, 36, 36);
+        let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        vertexBuffer.upload(new Float32Array(Earth.vertex));
+        vertexBuffer.unbind();
+        let indexBuffer = new Buffer(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
+        indexBuffer.uploadUShort(new Uint16Array(Earth.index));
+        indexBuffer.unbind();
+        let uvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        uvBuffer.upload(new Float32Array(Earth.texcoord));
+        uvBuffer.unbind();
+        let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        normalBuffer.upload(new Float32Array(Earth.normal));
+        normalBuffer.unbind();
+        vertexBuffer.bind();
+        prog.setVertexArrayObject("vPosition", vertexBuffer, 3, gl.FLOAT, false, 0, 0);
+        vertexBuffer.unbind();
+        uvBuffer.bind();
+        prog.setVertexArrayObject("vinTexturecoord", uvBuffer, 2, gl.FLOAT, false, 0, 0);
+        uvBuffer.unbind();
+        normalBuffer.bind();
+        prog.setVertexArrayObject("vinTextureNormal", normalBuffer, 3, gl.FLOAT, false, 0, 0);
+        normalBuffer.unbind();
+        if (!isDebug) {
+            let host = "";
+            let path = "";
+            let url = "";
+            let size = 8192;
+            yield DataProvider.getJson("https://api.rainviewer.com/public/weather-maps.json").then((data) => {
+                host = data["host"];
+                path = data["radar"]["nowcast"][0]["path"];
+                url = host + path + "/" + size.toString() + "/2/0_1.png";
+                console.log("[API REQUEST] GET", url);
+                let cloudTexture = new Texture(url, gl.TEXTURE2);
+                gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
+            });
+        }
+        else {
+            let cloudTexture = new Texture("/asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
+            gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
+        }
+        let dayTexture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
+        gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
+        let nightTexture = new Texture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
+        gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
+        let lightPos = Earth.lightPosTime(1636632000);
+        gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
+        indexBuffer.bind();
+        let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        let points = exampleCode();
+        fvbo.upload(new Float32Array(points));
+        fvbo.bind();
+        let ptr = fprog.getAttributeLocation("vPosition");
+        gl.enableVertexAttribArray(ptr);
+        gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
+        gl.drawArrays(gl.POINTS, 0, 6);
+        let scene = new Renderer(clear, rotate);
+        scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, drawEarth));
+        scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
+        scene.requestAnimation();
+    });
 }
 function initGL() {
     gl.enable(gl.DEPTH_TEST);

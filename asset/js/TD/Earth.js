@@ -85,13 +85,19 @@ export class Earth {
         return ret;
     }
     static lightPosTime(epoch) {
-        let date = new Date(epoch);
+        let date;
+        if (epoch > 0) {
+            date = new Date(epoch);
+        }
+        else {
+            date = new Date();
+        }
         let h = date.getUTCHours();
         let min = date.getUTCMinutes();
         let sec = date.getUTCSeconds();
         let degree = h * 15.0 + min * 0.25 + sec * 0.00417 - 180;
-        console.log("UTC", h, "시", min, "분", sec, "초", degree);
-        console.log("KST", date.getHours(), "시", date.getMinutes(), "분", date.getSeconds(), "초", degree);
+        console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
+        console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
         return this.lightPos(-degree);
     }
 }

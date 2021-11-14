@@ -13,7 +13,7 @@ import mat4 from './tsm/mat4.js';
 import vec3 from './tsm/vec3.js';
 
 const gl = GL.instance;
-let isDebug = true;
+let isDebug = false;
 let dragging = false;
 let old_mouse_x: number
 let old_mouse_y: number;
@@ -40,15 +40,16 @@ let fshader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
 let prog = new ShaderProgram("earth", vshader, fshader);
 prog.use();
 
-// 점 셰이더 생성
+// 항공기 셰이더 생성
 let fvshader = new Shader("flight.vert", gl.VERTEX_SHADER);
 let ffshader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
 let fprog = new ShaderProgram("flight", fvshader, ffshader);
 fprog.use();
 
+
 main();
 
-function main() {
+async function main() {
     //초기 설정을 합니다.
     initGL();
     Earth.create(1.0, 36, 36);
@@ -87,6 +88,31 @@ function main() {
     normalBuffer.bind();
     prog.setVertexArrayObject("vinTextureNormal", normalBuffer, 3, gl.FLOAT, false, 0, 0);
     normalBuffer.unbind();
+    if (!isDebug) {
+        //get clouds
+        let host: string = "";
+        let path: string = "";
+        let url: string = "";
+        let size: number = 8192;
+        await DataProvider.getJson("https://api.rainviewer.com/public/weather-maps.json").then((data) => {
+            //version: number
+            //generated: number
+            //host: string
+            //radar/past time:number, path:string []
+            //radar/nowcast time:number, path:string []
+            //satellite/infrared time:number, path: string []
+            host = data["host"];
+            path = data["radar"]["nowcast"][0]["path"];
+            url = host + path + "/" + size.toString() + "/2/0_1.png";
+            console.log("[API REQUEST] GET", url);
+            let cloudTexture = new Texture(url, gl.TEXTURE2);
+            gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);        
+        });
+    } else {
+        let cloudTexture = new Texture("/asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
+        gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);    
+    }
+
 
     //낮 텍스처 설정
     let dayTexture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
@@ -100,12 +126,7 @@ function main() {
     let lightPos = Earth.lightPosTime(1636632000);
     //빛 방향 설정
     gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
-    gl.uniform3f(prog.getUniformLocation("uCameraLoc"), camera.cameraPosition!.at(0), camera.cameraPosition!.at(1), camera.cameraPosition!.at(2));
-    //구름 텍스처 설정
-    /*
-    let cloudTexture = new Texture("", gl.TEXTURE2);
-    gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
-    */
+    //gl.uniform3f(prog.getUniformLocation("uCameraLoc"), camera.cameraPosition!.at(0), camera.cameraPosition!.at(1), camera.cameraPosition!.at(2));
 
     //인덱스 버퍼 바인드
     indexBuffer.bind();

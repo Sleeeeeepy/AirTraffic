@@ -104,7 +104,12 @@ export class Earth {
     }
 
     public static lightPosTime(epoch: number): any[] {
-        let date = new Date(epoch);
+        let date;
+        if (epoch > 0) {
+            date = new Date(epoch);
+        } else {
+            date = new Date();
+        }
         let h = date.getUTCHours();
         let min = date.getUTCMinutes();
         let sec = date.getUTCSeconds();

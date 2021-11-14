@@ -10,6 +10,7 @@ export class Texture {
         if (this.imageSource) {
             this.textrue = this.gl.createTexture();
             this.image = new Image();
+            this.image.crossOrigin = "Anonymous";
             this.image.src = this.imageSource;
             this.image.onload = () => {
                 this.create();
