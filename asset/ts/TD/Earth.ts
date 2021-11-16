@@ -2,9 +2,12 @@ export class Earth {
     private static _vertex: number[] = [];
     private static _normal: number[] = [];
     private static _texcoord: number[] = [];
+    private static _cloudTexcoord: number[] = [];
     private static _index: number[] = [];
     private static isInitialized: boolean = false;
-
+    
+    private constructor() {}
+    
     public static get vertex(): number[] {
         if (!this.isInitialized)
             throw Error("Mesh is not initialized.");
@@ -23,6 +26,12 @@ export class Earth {
         return Earth._texcoord;
     }
 
+    public static get cloudTexcoord(): number[] {
+        if (!this.isInitialized)
+            throw new Error("Mesh is not initialized.");
+        return Earth._cloudTexcoord;
+    }
+
     public static get index(): number[] {
         if (!this.isInitialized)
             throw Error("Mesh is not initialized.");
@@ -34,7 +43,7 @@ export class Earth {
         let phi, theta;
         let x, y, z;
         let nx, ny, nz;
-        let u, v;
+        let u, v, mu, mv;
         let stack_step = Math.PI / stacks;
         let slice_step = 2 * Math.PI / sectors;
 
@@ -52,10 +61,22 @@ export class Earth {
 
                 this._vertex.push(x, y, z);
                 this._normal.push(nx, ny, nz);
-
+                
+                //uv map
                 u = j / sectors;
                 v = i / stacks; // or 1 - i / stack
                 this._texcoord.push(u, v);
+                
+                //mercator projection to equirectangular projection
+                //mercator                      equirectangular
+                //x = theta         <--->           x = theta
+                //y = log_e(tan(pi/4+phi/2)) <--->  y = sin(phi)
+                //e is base of the natural logarithm.
+                let lat = u * 2 * Math.PI;
+                let lon = (v - 0.5) * Math.PI;
+                mu = lat / (2 * Math.PI); // normalize
+                mv = ((Math.log(Math.tan(Math.PI / 4.0 + lon / 2.0))) + Math.PI) / (2 * Math.PI); // normalize
+                this._cloudTexcoord.push(mu, mv);
             }
         }
         this.createIndex(stacks, sectors);
