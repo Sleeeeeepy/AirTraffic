@@ -31,7 +31,7 @@ export class ShaderProgram {
             return this.program;
         }
 
-        throw new Error("Fail to get ShaderProgam " + this.name + ".");
+        throw new Error(`Fail to get ShaderProgam ${this.name}.`);
     }
     private attach(shader: WebGLShader): void {
         if (this.program) {
@@ -62,7 +62,7 @@ export class ShaderProgram {
         if (this.program) {
             return this.program;
         }
-        throw new Error("Fail to get shader program " + this.name + ".");
+        throw new Error(`Fail to get shader program ${this.name}.`);
     }
 
     public use() {
@@ -70,7 +70,7 @@ export class ShaderProgram {
             this.gl.useProgram(this.program);
             return
         }
-        throw new Error("Fail to use ShaderProgam " + this.name + ".");
+        throw new Error(`Fail to use ShaderProgam ${this.name}.`);
     }
 
     public getAttributeLocation(attributeName: string): number {
@@ -79,7 +79,7 @@ export class ShaderProgram {
             let location = this.gl.getAttribLocation(this.program, attributeName);
             return location;
         }
-        throw new Error("Fail to get location of " + attributeName);
+        throw new Error(`Fail to get location of ${attributeName}.`);
     }
 
     public getUniformLocation(uniformName: string): WebGLUniformLocation {
@@ -90,7 +90,7 @@ export class ShaderProgram {
                 return location;
             }
         }
-        throw new Error("Fail to get location of " + uniformName);
+        throw new Error(`Fail to get location of ${uniformName}`);
     }
 
     public setVertexArrayObject(attributeName: string, buffer: Buffer, size: number, type: number, normalized: boolean, stride: number, offset: number): void {
@@ -114,7 +114,7 @@ export class ShaderProgram {
             this.shaders = null;
             return;
         }
-        console.log("It looks like the ShaderProgram " + this.name + " has already been cleaned up.");
+        console.log(`It looks like the ShaderProgram ${this.name} has already been cleaned up.`);
     }
 
     public delete(): void {
@@ -123,7 +123,7 @@ export class ShaderProgram {
             this.gl.deleteProgram(this.program);
             this.gl.useProgram(null);
         }
-        console.log("ShaderProgram " + this.name + " is deleted.");
+        console.log(`ShaderProgram ${this.name} is deleted.`);
         return;
     }
 }
