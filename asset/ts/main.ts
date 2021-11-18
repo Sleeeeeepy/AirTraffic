@@ -32,7 +32,7 @@ let orbitRadius = 100;
 let zoom = 0.5;
 let fov = Math.PI / 3
 let aspect = 1.0;
-let camera = new Camera(fov, aspect, 0.1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), true);
+let camera = new Camera(fov, aspect, 1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), true);
 
 // 지구 셰이더 생성
 let vshader = new Shader("earth.vert", gl.VERTEX_SHADER);
@@ -132,7 +132,6 @@ async function main() {
     let nightTexture = new Texture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
     gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
     
-    //let lightPos = Earth.lightPos(720);
     let lightPos = Earth.lightPosTime(1636632000);
     //빛 방향 설정
     gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
@@ -165,12 +164,12 @@ function initGL() {
 }
 
 function exampleCode() { 
-    let melbourne = Earth.pointAt(1.0, 144, -37);
-    let seoul = Earth.pointAt(1.0, 126, 37);
-    let tokyo = Earth.pointAt(1.0, 139, 35);
-    let newyork = Earth.pointAt(1.0, -73, 40); 
-    let losAngeles = Earth.pointAt(1.0, -118, 34);
-    let origin = Earth.pointAt(1.0, 0, 0);
+    let melbourne = Earth.pointAt(1.01, 144, -37);
+    let seoul = Earth.pointAt(1.01, 126, 37);
+    let tokyo = Earth.pointAt(1.01, 139, 35);
+    let newyork = Earth.pointAt(1.01, -73, 40); 
+    let losAngeles = Earth.pointAt(1.01, -118, 34);
+    let origin = Earth.pointAt(1.01, 0, 0);
     let points = melbourne.concat(seoul, tokyo, newyork, origin, losAngeles);
     return points;
 }
@@ -230,7 +229,7 @@ function drawEarth() {
 }
 
 function drawPoint() {
-    gl.disable(gl.DEPTH_TEST);
+    //gl.disable(gl.DEPTH_TEST);
     gl.uniformMatrix4fv(fprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
     gl.uniformMatrix4fv(fprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
     gl.uniformMatrix4fv(fprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
