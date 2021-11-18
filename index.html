@@ -12,15 +12,18 @@
         <script type="x-shader/x-vertex" id="earth.vert">#version 300 es
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec2 vinTexturecoord;
-layout(location = 2) in vec3 vinTextureNormal;
+layout(location = 2) in vec2 vinCloudTexturecoord;
+layout(location = 3) in vec3 vinTextureNormal;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uWorldMatrix;
 out vec2 voutTexturecoord;
+out vec2 voutCloudTexturecoord;
 out vec3 voutTextureNormal;
 void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uWorldMatrix * vec4(vPosition, 1.0);
     voutTexturecoord = vinTexturecoord;
+    voutCloudTexturecoord = vinCloudTexturecoord;
     voutTextureNormal = vinTextureNormal;
  }
         </script>
@@ -31,6 +34,7 @@ void main(void) {
     precision mediump float;
 #endif
 in vec2 voutTexturecoord;
+in vec2 voutCloudTexturecoord;
 in vec3 voutTextureNormal;
 uniform sampler2D uDayTexture;
 uniform sampler2D uNightTexture;
@@ -42,8 +46,8 @@ out vec4 Color;
 void main(void) {
     vec3 day = texture(uDayTexture, voutTexturecoord).rgb;
     vec3 night = texture(uNightTexture, voutTexturecoord).rgb;
-    vec4 cloud = texture(uCloudTexture, voutTexturecoord).rgba;
-    float shade = max(0.0, dot(voutTextureNormal, uLightDir));
+    vec4 cloud = texture(uCloudTexture, voutCloudTexturecoord).rgba;
+    float shade = max(0.0, dot(voutTextureNormal, uLightDir) + 0.5);
     
     if (shade >= 1.0) {
         if(night.r > night.b) {
@@ -69,7 +73,7 @@ void main(void) {
 }
         </script>
         <script type="x-shader/x-vertex" id="flight.vert">#version 300 es
-layout(location = 3) in vec3 vPosition;
+layout(location = 4) in vec3 vPosition;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uWorldMatrix;
@@ -87,6 +91,31 @@ void main(void) {
 out vec4 Color;
 void main(void) {
     Color = vec4(1.0, 0.0, 0.0, 1.0);
+}
+        </script>
+        <script type="x-shader/x-vertex" id="pick.vert">#version 300 es
+layout(location = 5) in vec3 vPosition;
+layout(location = 6) in vec4 vinColor; //picker infomation
+uniform mat4 uProjectionMatrix;
+uniform mat4 uViewMatrix;
+uniform mat4 uWorldMatrix;
+out vec4 voutColor;
+void main(void) {
+    gl_Position = uProjectionMatrix * uViewMatrix * uWorldMatrix * vec4(vPosition, 1.0);
+    voutColor = vinColor;
+}
+        </script>
+        <script type="x-shader/x-fragment" id="pick.frag">#version 300 es
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+#else
+    precision mediump float;
+#endif
+in vec4 voutColor; //picker information
+out vec4 Color;
+
+void main(void) {
+    Color = voutColor;
 }
         </script>
         <script src="./asset/js/main.js" type="module"></script>
