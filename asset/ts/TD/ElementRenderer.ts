@@ -7,13 +7,15 @@ export class ElementRenderer implements IRenderer {
     private gl: WebGLRenderingContext = GL.instance;
     private buffer: Buffer;
     private program: ShaderProgram;
-    private drawMode: number
+    private drawMode: number;
+    private dataType: number;
     private callback: () => void;
-
-    public constructor(buffer: Buffer, program: ShaderProgram, drawMode: number, callback: () => void) {
+    
+    public constructor(buffer: Buffer, program: ShaderProgram, drawMode: number, dataType: number, callback: () => void) {
         this.buffer = buffer;
         this.program = program;
         this.drawMode = drawMode;
+        this.dataType = dataType;
         this.callback = callback;
         callback.bind(this);
     }
@@ -22,6 +24,6 @@ export class ElementRenderer implements IRenderer {
         this.callback();
         this.buffer.bind();
         this.program.use();
-        this.gl.drawElements(this.drawMode, this.buffer.length, this.gl.UNSIGNED_SHORT, 0);
+        this.gl.drawElements(this.drawMode, this.buffer.length, this.dataType, 0);
     }
 }

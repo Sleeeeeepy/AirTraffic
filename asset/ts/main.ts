@@ -13,7 +13,7 @@ import mat4 from './tsm/mat4.js';
 import vec3 from './tsm/vec3.js';
 
 const gl = GL.instance;
-let isDebug = false;
+let isDebug = true;
 let dragging = false;
 let old_mouse_x: number
 let old_mouse_y: number;
@@ -69,6 +69,11 @@ async function main() {
     uvBuffer.upload(new Float32Array(Earth.texcoord));
     uvBuffer.unbind();
 
+    // 구름 텍스처 좌표 정보를 입력합니다.
+    let cloudUvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    cloudUvBuffer.upload(new Float32Array(Earth.cloudTexcoord));
+    cloudUvBuffer.unbind();
+
     // 버퍼에 정점의 노말벡터 정보를 입력합니다.
     let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     normalBuffer.upload(new Float32Array(Earth.normal));
@@ -83,6 +88,11 @@ async function main() {
     uvBuffer.bind();
     prog.setVertexArrayObject("vinTexturecoord", uvBuffer, 2, gl.FLOAT, false, 0, 0);
     uvBuffer.unbind();
+
+    // 구름 텍스처 좌표 설정
+    cloudUvBuffer.bind();
+    prog.setVertexArrayObject("vinCloudTexturecoord", cloudUvBuffer, 2, gl.FLOAT, false, 0, 0);
+    cloudUvBuffer.unbind();
 
     // 노말벡터 설정
     normalBuffer.bind();
@@ -143,7 +153,7 @@ async function main() {
     gl.drawArrays(gl.POINTS, 0, 6);
 
     let scene = new Renderer(clear, rotate);
-    scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, drawEarth));
+    scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, gl.UNSIGNED_SHORT, drawEarth));
     scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
     scene.requestAnimation();
 }

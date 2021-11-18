@@ -68,14 +68,12 @@ export class Earth {
                 this._texcoord.push(u, v);
                 
                 //mercator projection to equirectangular projection
-                //mercator                      equirectangular
-                //x = theta         <--->           x = theta
-                //y = log_e(tan(pi/4+phi/2)) <--->  y = sin(phi)
+                //mercator                      equirectangular                uv
+                //x = theta         <--->           x = theta       <---    x = 2pi * u
+                //y = log_e(tan(pi/4+phi/2)) <--->  y = sin(phi)    <---    y = pi * (v - 0.5)
                 //e is base of the natural logarithm.
-                let lat = u * 2 * Math.PI;
-                let lon = (v - 0.5) * Math.PI;
-                mu = lat / (2 * Math.PI); // normalize
-                mv = ((Math.log(Math.tan(Math.PI / 4.0 + lon / 2.0))) + Math.PI) / (2 * Math.PI); // normalize
+                mu = u;
+                mv = ((Math.log(Math.tan(Math.PI / 4.0 + (v - 0.5) * Math.PI / 2.0))) + Math.PI) / (2 * Math.PI); // normalize
                 this._cloudTexcoord.push(mu, mv);
             }
         }
@@ -135,8 +133,7 @@ export class Earth {
         let min = date.getUTCMinutes();
         let sec = date.getUTCSeconds();
 
-        //빛이 위치한 곳은 오후 12시인데, 아래 계산식은 그리니치 천문대를 기준으로 이미 180도 회전한 상태이므로, 180도를 빼야 한다.
-        let degree = h *  15.0 + min * 0.25 + sec * 0.00417 - 180;
+        let degree = h *  15.0 + min * 0.25 + sec * 0.00417;
         console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
         console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
         return this.lightPos(-degree);
