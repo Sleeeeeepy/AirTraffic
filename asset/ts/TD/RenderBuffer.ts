@@ -15,4 +15,13 @@ export class RenderBuffer {
     public bind() {
         this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.renderBuffer);
     }
+
+    public storage(internalFormat: number, width: number, height: number) {
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.renderBuffer);
+        this.gl.renderbufferStorage(this.gl.RENDERBUFFER, internalFormat, width, height);
+    }
+
+    public get GLRenderBuffer() {
+        return this.renderBuffer;
+    }
 }
