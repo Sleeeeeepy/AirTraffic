@@ -99,7 +99,7 @@ export class Earth {
        }
     }
 
-    public static pointAt(radius: number, lat: number, lon: number): any[] {
+    public static pointAt(radius: number, lat: number, lon: number): number[] {
         let ret = [];
         lat += 180;
         let latRad = lat * (Math.PI / 180);
