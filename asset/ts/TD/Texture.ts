@@ -3,21 +3,18 @@ import {GL} from './GL.js';
 export class Texture {
     private gl = GL.instance;
     private textrue?: WebGLTexture | null;
-    private data: ArrayBufferView | null;
 
-    public constructor(data: ArrayBufferView | null, x: number, y: number) {
+    public constructor() {
         this.textrue = this.gl.createTexture();
-        this.data = data;
-        this.create(data, x, y);
+        this.create();
     }
 
-    private create(data: ArrayBufferView | null, x: number, y:number): void {
+    private create(): void {
         if (this.textrue) {
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.textrue);
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
             this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, x, y, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, data);
             return;
         }
         throw new Error("Fail to create texture.");
@@ -42,9 +39,8 @@ export class Texture {
         }
     }
 
-    public refresh(x: number, y: number) {
+    public texImage2D(x: number, y: number, pixel: ArrayBufferView | null) {
         this.bind();
-        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, x, y, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.data);
-        this.unbind();
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, x, y, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, pixel);
     }
 }
