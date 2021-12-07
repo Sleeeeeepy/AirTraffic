@@ -20,6 +20,7 @@ uniform mat4 uWorldMatrix;
 out vec2 voutTexturecoord;
 out vec2 voutCloudTexturecoord;
 out vec3 voutTextureNormal;
+
 void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uWorldMatrix * vec4(vPosition, 1.0);
     voutTexturecoord = vinTexturecoord;
@@ -79,7 +80,7 @@ uniform mat4 uViewMatrix;
 uniform mat4 uWorldMatrix;
 void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uWorldMatrix * vec4(vPosition, 1.0);
-    gl_PointSize = 5.0;
+    gl_PointSize = 3.0;
 }
         </script>
         <script type="x-shader/x-fragment" id="flight.frag">#version 300 es
@@ -102,6 +103,7 @@ uniform mat4 uWorldMatrix;
 out vec4 voutColor;
 void main(void) {
     gl_Position = uProjectionMatrix * uViewMatrix * uWorldMatrix * vec4(vPosition, 1.0);
+    gl_PointSize = 3.0;
     voutColor = vinColor;
 }
         </script>
