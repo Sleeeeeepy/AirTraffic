@@ -20,14 +20,5 @@ export class DataProvider {
             }
         });
     }
-    static getImage(url) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let response = yield fetch(url, { mode: 'no-cors' });
-            if (response.ok) {
-                let image = yield response.blob();
-                return URL.createObjectURL(image);
-            }
-        });
-    }
 }
 //# sourceMappingURL=DataProvider.js.map

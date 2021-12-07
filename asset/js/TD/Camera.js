@@ -1,4 +1,5 @@
 import mat4 from '../tsm/mat4.js';
+import quat from '../tsm/quat.js';
 import vec3 from '../tsm/vec3.js';
 export class Camera {
     constructor(fov, aspect, near, far, orbit, zoom, target, adjustFar) {
@@ -7,6 +8,7 @@ export class Camera {
         this._up = new vec3([0, 1, 0]);
         this.isUpdated = false;
         this._adjustFar = false;
+        this._quat = new quat([0, 0, 0, 1]);
         this._aspect = aspect;
         this._near = near;
         this._far = far;
@@ -140,6 +142,17 @@ export class Camera {
             return;
         this._worldMatrix.rotate(radian, Camera._zAxis);
         this.isUpdated = true;
+    }
+    RotateQuatEuler(Xradian, Yradian, Zradian) {
+        Xradian /= 2;
+        Yradian /= 2;
+        Zradian /= 2;
+        let x = Math.sin(Xradian) * Math.cos(Yradian) * Math.cos(Zradian) + Math.cos(Xradian) * Math.sin(Yradian) * Math.sin(Zradian);
+        let y = Math.cos(Xradian) * Math.sin(Yradian) * Math.cos(Zradian) - Math.sin(Xradian) * Math.cos(Yradian) * Math.sin(Zradian);
+        let z = Math.cos(Xradian) * Math.cos(Yradian) * Math.sin(Zradian) + Math.sin(Xradian) * Math.sin(Yradian) * Math.cos(Zradian);
+        let w = Math.cos(Xradian) * Math.cos(Yradian) * Math.cos(Zradian) - Math.sin(Xradian) * Math.sin(Yradian) * Math.sin(Zradian);
+        this._quat = new quat([x, y, z, w]);
+        this._worldMatrix = this._quat.toMat4().multiply(this.worldMatrix.copy());
     }
 }
 Camera._xAxis = new vec3([1, 0, 0]);

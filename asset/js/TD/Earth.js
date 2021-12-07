@@ -1,4 +1,5 @@
 export class Earth {
+    constructor() { }
     static get vertex() {
         if (!this.isInitialized)
             throw Error("Mesh is not initialized.");
@@ -14,6 +15,11 @@ export class Earth {
             throw Error("Mesh is not initialized.");
         return Earth._texcoord;
     }
+    static get cloudTexcoord() {
+        if (!this.isInitialized)
+            throw new Error("Mesh is not initialized.");
+        return Earth._cloudTexcoord;
+    }
     static get index() {
         if (!this.isInitialized)
             throw Error("Mesh is not initialized.");
@@ -23,7 +29,7 @@ export class Earth {
         let phi, theta;
         let x, y, z;
         let nx, ny, nz;
-        let u, v;
+        let u, v, mu, mv;
         let stack_step = Math.PI / stacks;
         let slice_step = 2 * Math.PI / sectors;
         for (let i = 0; i <= stacks; ++i) {
@@ -41,6 +47,9 @@ export class Earth {
                 u = j / sectors;
                 v = i / stacks;
                 this._texcoord.push(u, v);
+                mu = u;
+                mv = ((Math.log(Math.tan(Math.PI / 4.0 + (v - 0.5) * Math.PI / 2.0))) + Math.PI) / (2 * Math.PI);
+                this._cloudTexcoord.push(mu, mv);
             }
         }
         this.createIndex(stacks, sectors);
@@ -95,7 +104,7 @@ export class Earth {
         let h = date.getUTCHours();
         let min = date.getUTCMinutes();
         let sec = date.getUTCSeconds();
-        let degree = h * 15.0 + min * 0.25 + sec * 0.00417 - 180;
+        let degree = h * 15.0 + min * 0.25 + sec * 0.00417;
         console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
         console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
         return this.lightPos(-degree);
@@ -104,6 +113,7 @@ export class Earth {
 Earth._vertex = [];
 Earth._normal = [];
 Earth._texcoord = [];
+Earth._cloudTexcoord = [];
 Earth._index = [];
 Earth.isInitialized = false;
 //# sourceMappingURL=Earth.js.map

@@ -17,34 +17,54 @@ import { GL } from './TD/GL.js';
 import { Renderer } from './TD/Renderer.js';
 import { Shader } from './TD/Shader.js';
 import { ShaderProgram } from './TD/ShaderProgram.js';
-import { Texture } from './TD/Texture.js';
+import { ImageTexture } from './TD/ImageTexture.js';
 import vec3 from './tsm/vec3.js';
+import { Texture } from './TD/Texture.js';
+import { RenderBuffer } from './TD/RenderBuffer.js';
+import { FrameBuffer } from './TD/FrameBuffer.js';
+import { Utils } from './Utils.js';
+import { Picker } from './TD/Picker.js';
 const gl = GL.instance;
-let isDebug = false;
+let isDebug = true;
 let dragging = false;
 let old_mouse_x;
 let old_mouse_y;
 let rotate_mouse_x = 0;
 let rotate_mouse_y = 0;
+let pick_mouse_x = -1;
+let pick_mouse_y = -1;
 let canvas = document.getElementById("gl_canvas");
+let LastCloudUpdateTime = new Date(1);
+let LastFlightUpdateTime = new Date(1);
+let flightData;
+let vertexData;
+let isVertexDataUpdated = false;
 canvas === null || canvas === void 0 ? void 0 : canvas.addEventListener("mousedown", mouseDown, false);
 canvas === null || canvas === void 0 ? void 0 : canvas.addEventListener("mouseup", mouseUp, false);
 canvas === null || canvas === void 0 ? void 0 : canvas.addEventListener("mouseout", mouseUp, false);
 canvas === null || canvas === void 0 ? void 0 : canvas.addEventListener("mousemove", mouseMove, false);
 canvas === null || canvas === void 0 ? void 0 : canvas.addEventListener("wheel", mouseWheel, false);
+canvas === null || canvas === void 0 ? void 0 : canvas.addEventListener("click", mouseClick, false);
 let orbitRadius = 100;
 let zoom = 0.5;
 let fov = Math.PI / 3;
-let aspect = 1.0;
-let camera = new Camera(fov, aspect, 0.1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), true);
-let vshader = new Shader("earth.vert", gl.VERTEX_SHADER);
-let fshader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
-let prog = new ShaderProgram("earth", vshader, fshader);
+let aspect = Utils.getAspect(canvas);
+let camera = new Camera(fov, aspect, 1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), true);
+let earthVertexShader = new Shader("earth.vert", gl.VERTEX_SHADER);
+let earthFragmentShader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
+let prog = new ShaderProgram("earth", earthVertexShader, earthFragmentShader);
 prog.use();
-let fvshader = new Shader("flight.vert", gl.VERTEX_SHADER);
-let ffshader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
-let fprog = new ShaderProgram("flight", fvshader, ffshader);
+let flightVertexShader = new Shader("flight.vert", gl.VERTEX_SHADER);
+let flightFragmentShader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
+let fprog = new ShaderProgram("flight", flightVertexShader, flightFragmentShader);
 fprog.use();
+let pickVertexShader = new Shader("pick.vert", gl.VERTEX_SHADER);
+let pickFragmentShader = new Shader("pick.frag", gl.FRAGMENT_SHADER);
+let pickProgram = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
+let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+let ivbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
+let framebuffer = new FrameBuffer();
+let picker = new Picker(framebuffer);
 main();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -59,6 +79,9 @@ function main() {
         let uvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
         uvBuffer.upload(new Float32Array(Earth.texcoord));
         uvBuffer.unbind();
+        let cloudUvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+        cloudUvBuffer.upload(new Float32Array(Earth.cloudTexcoord));
+        cloudUvBuffer.unbind();
         let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
         normalBuffer.upload(new Float32Array(Earth.normal));
         normalBuffer.unbind();
@@ -68,62 +91,102 @@ function main() {
         uvBuffer.bind();
         prog.setVertexArrayObject("vinTexturecoord", uvBuffer, 2, gl.FLOAT, false, 0, 0);
         uvBuffer.unbind();
+        cloudUvBuffer.bind();
+        prog.setVertexArrayObject("vinCloudTexturecoord", cloudUvBuffer, 2, gl.FLOAT, false, 0, 0);
+        cloudUvBuffer.unbind();
         normalBuffer.bind();
         prog.setVertexArrayObject("vinTextureNormal", normalBuffer, 3, gl.FLOAT, false, 0, 0);
         normalBuffer.unbind();
-        if (!isDebug) {
-            let host = "";
-            let path = "";
-            let url = "";
-            let size = 8192;
-            yield DataProvider.getJson("https://api.rainviewer.com/public/weather-maps.json").then((data) => {
-                host = data["host"];
-                path = data["radar"]["nowcast"][0]["path"];
-                url = host + path + "/" + size.toString() + "/2/0_1.png";
-                console.log("[API REQUEST] GET", url);
-                let cloudTexture = new Texture(url, gl.TEXTURE2);
-                gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
-            });
-        }
-        else {
-            let cloudTexture = new Texture("/asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
-            gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
-        }
-        let dayTexture = new Texture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
+        let cloudTexture = yield setCloudTexture();
+        let dayTexture = new ImageTexture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
         gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
-        let nightTexture = new Texture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
+        let nightTexture = new ImageTexture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
         gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
-        let lightPos = Earth.lightPosTime(1636632000);
+        let lightPos = Earth.lightPosTime(0);
         gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
         indexBuffer.bind();
-        let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-        let points = exampleCode();
-        fvbo.upload(new Float32Array(points));
+        refreshFlightData();
+        fvbo.upload(new Float32Array(flightData));
         fvbo.bind();
         let ptr = fprog.getAttributeLocation("vPosition");
         gl.enableVertexAttribArray(ptr);
         gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
-        gl.drawArrays(gl.POINTS, 0, 6);
+        setInterval(() => __awaiter(this, void 0, void 0, function* () {
+            yield refreshFlightData();
+        }), 10000);
+        setInterval(() => __awaiter(this, void 0, void 0, function* () {
+            yield refreshCloud(cloudTexture);
+        }), 600000);
+        let textureToRender = new Texture();
+        let renderbuffer = new RenderBuffer();
+        renderbuffer.bind();
+        function setFramebufferAttachmentSizes(width, height) {
+            textureToRender.bind();
+            textureToRender.texImage2D(width, height, null);
+            renderbuffer.storage(gl.DEPTH_COMPONENT16, width, height);
+        }
+        framebuffer.bind();
+        setFramebufferAttachmentSizes(canvas.width, canvas.height);
+        framebuffer.setTexture2D(textureToRender);
+        framebuffer.setRenderBufferDepthAttachment(renderbuffer);
         let scene = new Renderer(clear, rotate);
-        scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLE_STRIP, drawEarth));
+        scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawEarth));
         scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
+        scene.addRenderer(new ArrayRenderer(fvbo, 3, pickProgram, gl.POINTS, drawPointOffscreen));
         scene.requestAnimation();
+        function drawEarth() {
+            framebuffer.unbind();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+            gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+            gl.uniformMatrix4fv(prog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        }
+        function drawPoint() {
+            framebuffer.unbind();
+            gl.uniformMatrix4fv(fprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+            gl.uniformMatrix4fv(fprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+            gl.uniformMatrix4fv(fprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        }
+        function drawPointOffscreen() {
+            framebuffer.bind();
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            gl.uniformMatrix4fv(pickProgram.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+            gl.uniformMatrix4fv(pickProgram.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+            gl.uniformMatrix4fv(pickProgram.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        }
+        function clear() {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            if (isVertexDataUpdated) {
+                isVertexDataUpdated = false;
+                fvbo.bind();
+                fvbo.upload(new Float32Array(vertexData));
+                ivbo.bind();
+                ivbo.upload(new Float32Array(createIndex()));
+                fvbo.bind();
+                let fvPosition = fprog.getAttributeLocation("vPosition");
+                gl.vertexAttribPointer(fvPosition, 3, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(fvPosition);
+                let pvPosition = pickProgram.getAttributeLocation("vPosition");
+                gl.vertexAttribPointer(pvPosition, 3, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(pvPosition);
+                ivbo.bind();
+                let pvinColor = pickProgram.getAttributeLocation("vinColor");
+                gl.vertexAttribPointer(pvinColor, 4, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(pvinColor);
+            }
+            if (Utils.resizeCanvas(canvas)) {
+                setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
+            }
+        }
     });
 }
 function initGL() {
+    gl.frontFace(gl.CCW);
     gl.enable(gl.DEPTH_TEST);
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.enable(gl.CULL_FACE);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-}
-function exampleCode() {
-    let melbourne = Earth.pointAt(1.0, 144, -37);
-    let seoul = Earth.pointAt(1.0, 126, 37);
-    let tokyo = Earth.pointAt(1.0, 139, 35);
-    let newyork = Earth.pointAt(1.0, -73, 40);
-    let losAngeles = Earth.pointAt(1.0, -118, 34);
-    let origin = Earth.pointAt(1.0, 0, 0);
-    let points = melbourne.concat(seoul, tokyo, newyork, origin, losAngeles);
-    return points;
 }
 function mouseDown(e) {
     dragging = true;
@@ -135,9 +198,24 @@ function mouseUp(e) {
     dragging = false;
     rotate_mouse_x = 0;
     rotate_mouse_y = 0;
-    e.preventDefault();
+}
+function mouseClick(e) {
+    let pX = pick_mouse_x * gl.canvas.width / gl.canvas.clientWidth;
+    let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / gl.canvas.clientHeight - 1;
+    let picked_flight = picker.select(pX, pY);
+    showFlightInfo(picked_flight);
+}
+function showFlightInfo(index) {
+    if (index >= 0) {
+    }
+    else {
+        return;
+    }
 }
 function mouseMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    pick_mouse_x = e.clientX - rect.left;
+    pick_mouse_y = e.clientY - rect.top;
     if (!dragging)
         return;
     let dx = (e.pageX - old_mouse_x) / canvas.width;
@@ -153,28 +231,99 @@ function mouseWheel(e) {
     if (camera.zoom + move < 0.5) {
         return;
     }
-    if (camera.zoom + move > 3.0) {
+    if (camera.zoom + move > 4.0) {
         return;
     }
     camera.zoom += e.deltaY * -0.001;
     e.preventDefault();
 }
-function clear() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+function createIndex() {
+    let arr = new Array();
+    for (let i = 0; i < flightData["states"].length; i++) {
+        let id = Picker.makeIdentifier(i);
+        arr.push(id[0], id[1], id[2], id[3]);
+    }
+    return arr;
 }
 function rotate() {
-    camera.RotateZ(rotate_mouse_x);
+    if (dragging) {
+        camera.RotateQuatEuler(rotate_mouse_y, 0, rotate_mouse_x);
+    }
 }
-function drawEarth() {
-    gl.enable(gl.DEPTH_TEST);
-    gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
-    gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
-    gl.uniformMatrix4fv(prog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+function setCloudTexture() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let cloudTexture;
+        if (!isDebug) {
+            let host = "";
+            let path = "";
+            let url = "";
+            let size = 8192;
+            yield DataProvider.getJson("https://api.rainviewer.com/public/weather-maps.json").then((data) => {
+                host = data["host"];
+                path = data["radar"]["nowcast"][0]["path"];
+                url = host + path + "/" + size.toString() + "/2/0_1.png";
+                console.log("[API REQUEST] GET", url);
+                cloudTexture = new ImageTexture(url, gl.TEXTURE2);
+                gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
+            });
+        }
+        else {
+            cloudTexture = new ImageTexture("/asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
+            gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
+        }
+        if (!cloudTexture) {
+            throw new Error("cloudTextrue error.");
+        }
+        return cloudTexture;
+    });
 }
-function drawPoint() {
-    gl.disable(gl.DEPTH_TEST);
-    gl.uniformMatrix4fv(fprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
-    gl.uniformMatrix4fv(fprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
-    gl.uniformMatrix4fv(fprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+function refreshCloud(cloudTexture) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!Utils.isUpdatable(LastCloudUpdateTime, 600000)) {
+            return;
+        }
+        if (!isDebug) {
+            let host = "";
+            let path = "";
+            let url = "";
+            let size = 8192;
+            yield DataProvider.getJson("https://api.rainviewer.com/public/weather-maps.json").then((data) => {
+                host = data["host"];
+                path = data["radar"]["nowcast"][0]["path"];
+                url = host + path + "/" + size.toString() + "/2/0_1.png";
+                console.log("[API REQUEST] IMAGE GET", url);
+                cloudTexture.changeImage(url);
+            });
+            if (!cloudTexture) {
+                throw new Error("cloudTextrue error.");
+            }
+            LastCloudUpdateTime = new Date();
+            console.log("[", LastCloudUpdateTime.toUTCString(), "]", "Cloud data is refreshed.");
+        }
+    });
+}
+function refreshFlightData() {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!Utils.isUpdatable(LastFlightUpdateTime, 10000)) {
+            return;
+        }
+        function resolveFlightData(data) {
+            let arr = new Array();
+            for (let i = 0; i < data["states"].length; i++) {
+                let lon = data["states"][i][6];
+                let lat = data["states"][i][5];
+                let point = Earth.pointAt(1.01, lat, lon);
+                arr.push(point[0], point[1], point[2]);
+            }
+            return arr;
+        }
+        yield DataProvider.getJson("https://opensky-network.org/api/states/all").then((data) => {
+            flightData = data;
+        });
+        LastFlightUpdateTime = new Date();
+        vertexData = resolveFlightData(flightData);
+        isVertexDataUpdated = true;
+        console.log("[", LastFlightUpdateTime.toUTCString(), "]", "Flight data is refreshed.");
+    });
 }
 //# sourceMappingURL=main.js.map
