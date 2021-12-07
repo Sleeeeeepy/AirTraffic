@@ -8,12 +8,4 @@ export class DataProvider {
             throw new Error("Fail to fetch json data.");
         }
     }
-
-    public static async getImage(url:string) {
-        let response = await fetch(url, {mode: 'no-cors'});
-        if (response.ok) {
-            let image = await response.blob();
-            return URL.createObjectURL(image);
-        }
-    }
 }
