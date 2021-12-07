@@ -50,29 +50,19 @@ uniform vec3 uLightDir;
 
 out vec4 Color;
 void main(void) {
+    const float dffborder = 0.25;
     vec3 day = texture(uDayTexture, voutTexturecoord).rgb;
     vec3 night = texture(uNightTexture, voutTexturecoord).rgb;
     vec4 cloud = texture(uCloudTexture, voutCloudTexturecoord).rgba;
-    float shade = max(0.0, dot(voutTextureNormal, uLightDir) + 0.5);
-    
-    if (shade >= 1.0) {
-        if(night.r > night.b) {
-            Color = vec4(night * 0.8, 1.0);
-        } else {
-            Color = vec4(0.0, 0.0, 0.0, 1.0);
+    float shade = max(0.0, dot(voutTextureNormal, uLightDir) + dffborder);
+    Color = vec4(day - shade, 1.0);
+
+    if (shade >= dffborder) {
+        if (night.r > night.b) {
+            Color = vec4(night, 1.0);
         }
-    } else if (shade > 0.3) {
-        day = day - shade;
-        if(night.r > night.b) {
-            night = vec3(night * ((shade - 0.3) / 0.7) * 0.8);
-            Color = vec4(max(day.r, night.r), max(day.g, night.g), max(day.b, night.b), 1.0);
-        } else {
-            Color = vec4(day, 1.0);
-        }
-    } else {
-        Color = vec4(day - shade, 1.0);
     }
-    
+
     if (cloud.a >= 1.0) {
         Color = cloud;
     }
@@ -125,6 +115,8 @@ void main(void) {
     Color = voutColor;
 }
         </script>
+        <script type="x-shader/x-vertex" id="sky.vert"></script>
+        <script type="x-shader/x-fragment" id="sky.frag"></script>
         <script src="./asset/js/main.js" type="module"></script>
     </body>
 </html>
