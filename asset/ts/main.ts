@@ -182,7 +182,6 @@ async function main() {
     function drawEarth() {
         framebuffer.unbind();
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
         gl.uniformMatrix4fv(prog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
@@ -231,6 +230,7 @@ async function main() {
     
         if (Utils.resizeCanvas(canvas)) {
             setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         }
     }
 }

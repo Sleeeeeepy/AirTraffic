@@ -133,7 +133,6 @@ function main() {
         function drawEarth() {
             framebuffer.unbind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
             gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
             gl.uniformMatrix4fv(prog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
@@ -173,6 +172,7 @@ function main() {
             }
             if (Utils.resizeCanvas(canvas)) {
                 setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             }
         }
     });
@@ -216,7 +216,7 @@ function showFlightInfo(index, mouse_x, mouse_y) {
         let origin_country = flightData["states"][index][2];
         let time_position = flightData["states"][index][3];
         let last_contact = flightData["states"][index][4];
-        let longtitude = flightData["states"][index][5];
+        let longitude = flightData["states"][index][5];
         let latitude = flightData["states"][index][6];
         let baro_altitude = flightData["states"][index][7];
         let on_ground = flightData["states"][index][8];
@@ -246,13 +246,13 @@ function showFlightInfo(index, mouse_x, mouse_y) {
             text.innerText += `callsign: ${callsign}\n`;
         }
         text.innerText += `origin: ${origin_country}\n`;
-        text.innerText += `lon: ${longtitude}\n`;
-        text.innerText += `lat: ${latitude}\n`;
+        text.innerText += `longitude: ${longitude}\n`;
+        text.innerText += `latitude: ${latitude}\n`;
         if (geo_altitude) {
-            text.innerText += `altitude: ${geo_altitude}\n`;
+            text.innerText += `altitude: ${geo_altitude}m\n`;
         }
         if (baro_altitude) {
-            text.innerText += `barometric altitude: ${baro_altitude}\n`;
+            text.innerText += `barometric altitude: ${baro_altitude}m\n`;
         }
         if (velocity) {
             text.innerText += `velocity: ${(velocity * 3.6).toFixed(2)}km/h\n`;
