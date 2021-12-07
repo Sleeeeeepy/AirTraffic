@@ -5,13 +5,9 @@ import { ShaderProgram } from "./ShaderProgram.js";
 
 export class Picker {
     private gl: WebGLRenderingContext = GL.instance;
-    private _pickShader: ShaderProgram;
-    private _frameBuffer: FrameBuffer;
-    private _renderer: IRenderer;
+    private _frameBuffer: FrameBuffer | null;
 
-    public constructor(pickShader: ShaderProgram, renderer: IRenderer, frameBuffer: FrameBuffer) {
-        this._pickShader = pickShader;
-        this._renderer = renderer;
+    public constructor(frameBuffer: FrameBuffer | null) {
         this._frameBuffer = frameBuffer;
     }
 
@@ -31,22 +27,22 @@ export class Picker {
     // 어느 쪽을 이용하든 계산 결과는 하나의 id를 매핑합니다.                           //
     // @http://learnwebgl.brown37.net/11_advanced_rendering/selecting_objects.html  //
     // 위 두 예제 중 가장 직관적이고 친숙한 것은 첫번째이므로 첫번째를 택했습니다.        //
-    private getIdentifier(readFromPixel: Uint8Array): number {                      //
-        return readFromPixel[0] +                                                   //
-        (readFromPixel[1] << 8) +                                                   //
-        (readFromPixel[2] << 16) +                                                  //
-        (readFromPixel[3] << 32);                                                   //
-    }                                                                               //
-    //                                                                              //
-    public static makeIdentifier(id: number): Uint8Array {                          //
-        return new Uint8Array([                                                     //
-            ((id) >> 0) & 0xFF / 0xFF,                                              //
-            ((id) >> 8) & 0xFF / 0xFF,                                              //
-            ((id) >> 16) & 0xFF / 0xFF,                                             //
-            ((id) >> 32) & 0xFF / 0xFF                                              //
-        ]);                                                                         //
-    }                                                                               //
-    //////////////////////////////////////////////////////////////////////////////////
+    private getIdentifier(readFromPixel: Uint8Array): number {
+        return readFromPixel[0] +
+            (readFromPixel[1] << 8) +
+            (readFromPixel[2] << 16) +
+            (readFromPixel[3] << 24);
+    }
+
+    public static makeIdentifier(id: number): Array<number> {
+        return new Array<number>(
+            ((id >> 0) & 0xFF) / 0xFF,
+            ((id >> 8) & 0xFF) / 0xFF,
+            ((id >> 16) & 0xFF) / 0xFF,
+            ((id >> 24) & 0xFF) / 0xFF
+        );
+    }
+
 
     /*
     원리: 클릭하는 순간 다른 프레임 버퍼 오브젝트에 그림을 그립니다.
@@ -54,9 +50,13 @@ export class Picker {
     @https://diehard98.tistory.com/entry/FBO-FrameBuffer-Object-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0
     */
     public select(x: number, y: number): number {
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this._frameBuffer);
+        if (this._frameBuffer) {
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this._frameBuffer.getWebGLFrameBuffer());
+        } else {
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        }
         let data = this.readSinglePixel(x, y);
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        //this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
         return this.getIdentifier(data);
     }
 }
