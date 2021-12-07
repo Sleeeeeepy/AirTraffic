@@ -25,7 +25,6 @@ import { FrameBuffer } from './TD/FrameBuffer.js';
 import { Utils } from './Utils.js';
 import { Picker } from './TD/Picker.js';
 const gl = GL.instance;
-const frameRate = 30;
 let isDebug = true;
 let dragging = false;
 let old_mouse_x;
@@ -61,7 +60,7 @@ let fprog = new ShaderProgram("flight", flightVertexShader, flightFragmentShader
 fprog.use();
 let pickVertexShader = new Shader("pick.vert", gl.VERTEX_SHADER);
 let pickFragmentShader = new Shader("pick.frag", gl.FRAGMENT_SHADER);
-let pickProgram = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
+let pprog = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
 let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
 let ivbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
 let framebuffer = new FrameBuffer();
@@ -107,11 +106,6 @@ function main() {
         gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
         indexBuffer.bind();
         refreshFlightData();
-        fvbo.upload(new Float32Array(flightData));
-        fvbo.bind();
-        let ptr = fprog.getAttributeLocation("vPosition");
-        gl.enableVertexAttribArray(ptr);
-        gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
         setInterval(() => __awaiter(this, void 0, void 0, function* () {
             yield refreshFlightData();
         }), 10000);
@@ -134,7 +128,7 @@ function main() {
         let scene = new Renderer(clear, rotate);
         scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawEarth));
         scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
-        scene.addRenderer(new ArrayRenderer(fvbo, 3, pickProgram, gl.POINTS, drawPointOffscreen));
+        scene.addRenderer(new ArrayRenderer(fvbo, 3, pprog, gl.POINTS, drawPointOffscreen));
         scene.requestAnimation();
         function drawEarth() {
             framebuffer.unbind();
@@ -153,9 +147,9 @@ function main() {
         function drawPointOffscreen() {
             framebuffer.bind();
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.uniformMatrix4fv(pickProgram.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
-            gl.uniformMatrix4fv(pickProgram.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
-            gl.uniformMatrix4fv(pickProgram.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+            gl.uniformMatrix4fv(pprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+            gl.uniformMatrix4fv(pprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+            gl.uniformMatrix4fv(pprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
         }
         function clear() {
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -169,11 +163,11 @@ function main() {
                 let fvPosition = fprog.getAttributeLocation("vPosition");
                 gl.vertexAttribPointer(fvPosition, 3, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(fvPosition);
-                let pvPosition = pickProgram.getAttributeLocation("vPosition");
+                let pvPosition = pprog.getAttributeLocation("vPosition");
                 gl.vertexAttribPointer(pvPosition, 3, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(pvPosition);
                 ivbo.bind();
-                let pvinColor = pickProgram.getAttributeLocation("vinColor");
+                let pvinColor = pprog.getAttributeLocation("vinColor");
                 gl.vertexAttribPointer(pvinColor, 4, gl.FLOAT, false, 0, 0);
                 gl.enableVertexAttribArray(pvinColor);
             }
@@ -251,11 +245,17 @@ function showFlightInfo(index, mouse_x, mouse_y) {
         if (callsign) {
             text.innerText += `callsign: ${callsign}\n`;
         }
-        text.innerText += `from ${origin_country}\n`;
+        text.innerText += `origin: ${origin_country}\n`;
         text.innerText += `lon: ${longtitude}\n`;
         text.innerText += `lat: ${latitude}\n`;
+        if (geo_altitude) {
+            text.innerText += `altitude: ${geo_altitude}\n`;
+        }
+        if (baro_altitude) {
+            text.innerText += `barometric altitude: ${baro_altitude}\n`;
+        }
         if (velocity) {
-            text.innerText += `velocity: ${velocity}m/s\n`;
+            text.innerText += `velocity: ${(velocity * 3.6).toFixed(2)}km/h\n`;
         }
         text.innerText += `data from ${posSrcString}`;
     }
@@ -283,7 +283,7 @@ function mouseWheel(e) {
     if (camera.zoom + move < 0.5) {
         return;
     }
-    if (camera.zoom + move > 4.0) {
+    if (camera.zoom + move > 8.0) {
         return;
     }
     camera.zoom += e.deltaY * -0.001;
