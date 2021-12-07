@@ -25,6 +25,7 @@ import { FrameBuffer } from './TD/FrameBuffer.js';
 import { Utils } from './Utils.js';
 import { Picker } from './TD/Picker.js';
 const gl = GL.instance;
+const frameRate = 30;
 let isDebug = true;
 let dragging = false;
 let old_mouse_x;
@@ -126,6 +127,7 @@ function main() {
             renderbuffer.storage(gl.DEPTH_COMPONENT16, width, height);
         }
         framebuffer.bind();
+        gl.enable(gl.CULL_FACE);
         setFramebufferAttachmentSizes(canvas.width, canvas.height);
         framebuffer.setTexture2D(textureToRender);
         framebuffer.setRenderBufferDepthAttachment(renderbuffer);
@@ -203,12 +205,62 @@ function mouseClick(e) {
     let pX = pick_mouse_x * gl.canvas.width / gl.canvas.clientWidth;
     let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / gl.canvas.clientHeight - 1;
     let picked_flight = picker.select(pX, pY);
-    showFlightInfo(picked_flight);
+    showFlightInfo(picked_flight, e.clientX, e.clientY);
 }
-function showFlightInfo(index) {
+function showFlightInfo(index, mouse_x, mouse_y) {
+    let infobox = document.getElementById("box");
+    let text = document.getElementById("boxinner");
+    if (!infobox || !text) {
+        return;
+    }
     if (index >= 0) {
+        infobox.style.display = 'block';
+        infobox.style.left = `${mouse_x.toString()}px`;
+        infobox.style.top = `${mouse_y.toString()}px`;
+        let icao24 = flightData["states"][index][0];
+        let callsign = flightData["states"][index][1];
+        let origin_country = flightData["states"][index][2];
+        let time_position = flightData["states"][index][3];
+        let last_contact = flightData["states"][index][4];
+        let longtitude = flightData["states"][index][5];
+        let latitude = flightData["states"][index][6];
+        let baro_altitude = flightData["states"][index][7];
+        let on_ground = flightData["states"][index][8];
+        let velocity = flightData["states"][index][9];
+        let true_track = flightData["states"][index][10];
+        let vertical_rate = flightData["states"][index][11];
+        let sensors = flightData["states"][index][12];
+        let geo_altitude = flightData["states"][index][13];
+        let squawk = flightData["states"][index][14];
+        let spi = flightData["states"][index][15];
+        let posSrc = flightData["states"][index][16];
+        let posSrcString;
+        if (posSrc == 0) {
+            posSrcString = "ADS-B";
+        }
+        else if (posSrc == 1) {
+            posSrcString = "ASTERIX";
+        }
+        else if (posSrc == 2) {
+            posSrcString = "MLAT";
+        }
+        else {
+            posSrcString = "unknown";
+        }
+        text.innerText = `icao24: ${icao24}\n`;
+        if (callsign) {
+            text.innerText += `callsign: ${callsign}\n`;
+        }
+        text.innerText += `from ${origin_country}\n`;
+        text.innerText += `lon: ${longtitude}\n`;
+        text.innerText += `lat: ${latitude}\n`;
+        if (velocity) {
+            text.innerText += `velocity: ${velocity}m/s\n`;
+        }
+        text.innerText += `data from ${posSrcString}`;
     }
     else {
+        infobox.style.display = 'none';
         return;
     }
 }
