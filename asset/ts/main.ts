@@ -18,6 +18,7 @@ import { Utils } from './Utils.js';
 import { Picker } from './TD/Picker.js';
 
 const gl = GL.instance;
+const frameRate = 30;
 let isDebug = true;
 let dragging = false;
 let old_mouse_x: number
@@ -33,6 +34,7 @@ let flightData: any;
 let vertexData: Array<number>;
 let isVertexDataUpdated: boolean = false;
 
+// 마우스 이벤트 설정
 canvas?.addEventListener("mousedown", mouseDown, false);
 canvas?.addEventListener("mouseup", mouseUp, false);
 canvas?.addEventListener("mouseout", mouseUp, false);
@@ -173,6 +175,7 @@ async function main() {
         renderbuffer.storage(gl.DEPTH_COMPONENT16, width, height);
     }
     framebuffer.bind();
+    gl.enable(gl.CULL_FACE);
     setFramebufferAttachmentSizes(canvas.width, canvas.height);
     framebuffer.setTexture2D(textureToRender);
     framebuffer.setRenderBufferDepthAttachment(renderbuffer);
@@ -264,13 +267,62 @@ function mouseClick(e: MouseEvent) {
     let pX = pick_mouse_x * gl.canvas.width / gl.canvas.clientWidth;
     let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / gl.canvas.clientHeight - 1;
     let picked_flight = picker.select(pX, pY);
-    showFlightInfo(picked_flight);
+    showFlightInfo(picked_flight, e.clientX, e.clientY);
 }
 
-function showFlightInfo(index: number) {
+function showFlightInfo(index: number, mouse_x: number, mouse_y: number) {
+    let infobox = document.getElementById("box");
+    let text = document.getElementById("boxinner");
+    if (!infobox || !text) {
+        return;
+    }
     if (index >= 0) {
         //show flight data...
+        infobox.style.display = 'block';
+        infobox.style.left = `${mouse_x.toString()}px`;
+        infobox.style.top = `${mouse_y.toString()}px`;
+
+        let icao24: string = flightData["states"][index][0];
+        let callsign: string | null = flightData["states"][index][1];
+        let origin_country: string = flightData["states"][index][2];
+        let time_position: number | null = flightData["states"][index][3];
+        let last_contact: number | null = flightData["states"][index][4];
+        let longtitude: number | null = flightData["states"][index][5];
+        let latitude: number | null = flightData["states"][index][6];
+        let baro_altitude: number | null = flightData["states"][index][7];
+        let on_ground: boolean = flightData["states"][index][8];
+        let velocity: number | null = flightData["states"][index][9];
+        let true_track: number | null = flightData["states"][index][10];
+        let vertical_rate: number | null = flightData["states"][index][11]
+        let sensors: Array<number> | null = flightData["states"][index][12];
+        let geo_altitude: number | null = flightData["states"][index][13];
+        let squawk: string | null = flightData["states"][index][14];
+        let spi: boolean = flightData["states"][index][15];
+        let posSrc: number = flightData["states"][index][16];
+        let posSrcString: string;
+        if (posSrc == 0) {
+            posSrcString = "ADS-B";
+        } else if (posSrc == 1) {
+            posSrcString = "ASTERIX";
+        } else if (posSrc == 2){
+            posSrcString = "MLAT";
+        } else {
+            posSrcString = "unknown";
+        }
+        text.innerText = `icao24: ${icao24}\n`;
+        if (callsign) {
+            text.innerText += `callsign: ${callsign}\n`;
+        }
+        text.innerText += `from ${origin_country}\n`;
+        text.innerText += `lon: ${longtitude}\n`;
+        text.innerText += `lat: ${latitude}\n`;
+        if (velocity) {
+            text.innerText += `velocity: ${velocity}m/s\n`;
+        }
+        text.innerText += `data from ${posSrcString}`;
+        
     } else {
+        infobox.style.display = 'none';
         return;
     }
 }

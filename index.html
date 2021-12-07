@@ -4,11 +4,16 @@
         <title>GC21 Data Visualization With WebGL</title>
         <meta charset="UTF-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
-        <link href="./asset/css/canvas.css" rel="stylesheet"/>
+        <link href="./asset/css/style.css" type="text/css" rel="stylesheet"/>
         <link href="./favicon.ico" rel="icon" type="image/x-icon"/>
+        <!-- fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@200&display=swap" rel="stylesheet">
     </head>
     <body>
-        <canvas id="gl_canvas" width="800" height="800"></canvas>
+        <canvas id="gl_canvas"></canvas>
+        <div id="box"><div id="boxinner"></div></div>
         <script type="x-shader/x-vertex" id="earth.vert">#version 300 es
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec2 vinTexturecoord;
