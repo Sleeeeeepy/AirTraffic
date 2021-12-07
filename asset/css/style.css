@@ -2,13 +2,14 @@
     display:none;
     position:absolute;
     border-radius:15px;
-    width:200px;
+    width:auto;
     background-color: rgba(0, 0, 0, 0.5);
     border:2px solid black;
 }
 
 #box > #boxinner {
     margin-left:10px;
+    margin-right:10px;
     font-family: 'Readex Pro', sans-serif;
     color: white;
 }
