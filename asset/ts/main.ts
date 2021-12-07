@@ -18,7 +18,6 @@ import { Utils } from './Utils.js';
 import { Picker } from './TD/Picker.js';
 
 const gl = GL.instance;
-const frameRate = 30;
 let isDebug = true;
 let dragging = false;
 let old_mouse_x: number
@@ -64,7 +63,7 @@ fprog.use();
 // 선택 셰이터 생성
 let pickVertexShader = new Shader("pick.vert", gl.VERTEX_SHADER);
 let pickFragmentShader = new Shader("pick.frag", gl.FRAGMENT_SHADER);
-let pickProgram = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
+let pprog = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
 
 // 프레임 버퍼와 랜더 버퍼 생성
 //let renderBuffer = new RenderBuffer(gl.DEPTH_COMPONENT16);
@@ -148,13 +147,7 @@ async function main() {
 
     //점 설정
     refreshFlightData();
-    fvbo.upload(new Float32Array(flightData));
-    fvbo.bind();
-    let ptr = fprog.getAttributeLocation("vPosition");
-    gl.enableVertexAttribArray(ptr);
-    gl.vertexAttribPointer(ptr, 3, gl.FLOAT, false, 0, 0);
-    //gl.drawArrays(gl.POINTS, 0, fvbo.length / 3);
-
+    
     // 비행기 데이터 갱신
     setInterval(async () => {
         await refreshFlightData();
@@ -183,7 +176,7 @@ async function main() {
     let scene = new Renderer(clear, rotate);
     scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawEarth));
     scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
-    scene.addRenderer(new ArrayRenderer(fvbo, 3, pickProgram, gl.POINTS, drawPointOffscreen))
+    scene.addRenderer(new ArrayRenderer(fvbo, 3, pprog, gl.POINTS, drawPointOffscreen))
     scene.requestAnimation();
 
     function drawEarth() {
@@ -205,9 +198,9 @@ async function main() {
     function drawPointOffscreen() {
         framebuffer.bind();
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        gl.uniformMatrix4fv(pickProgram.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
-        gl.uniformMatrix4fv(pickProgram.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
-        gl.uniformMatrix4fv(pickProgram.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        gl.uniformMatrix4fv(pprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+        gl.uniformMatrix4fv(pprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+        gl.uniformMatrix4fv(pprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
     }
 
     function clear() {
@@ -226,12 +219,12 @@ async function main() {
             gl.vertexAttribPointer(fvPosition, 3, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(fvPosition);
             
-            let pvPosition = pickProgram.getAttributeLocation("vPosition");
+            let pvPosition = pprog.getAttributeLocation("vPosition");
             gl.vertexAttribPointer(pvPosition, 3, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(pvPosition);
             
             ivbo.bind();
-            let pvinColor = pickProgram.getAttributeLocation("vinColor");
+            let pvinColor = pprog.getAttributeLocation("vinColor");
             gl.vertexAttribPointer(pvinColor, 4, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(pvinColor);
         }
@@ -287,7 +280,7 @@ function showFlightInfo(index: number, mouse_x: number, mouse_y: number) {
         let origin_country: string = flightData["states"][index][2];
         let time_position: number | null = flightData["states"][index][3];
         let last_contact: number | null = flightData["states"][index][4];
-        let longtitude: number | null = flightData["states"][index][5];
+        let longitude: number | null = flightData["states"][index][5];
         let latitude: number | null = flightData["states"][index][6];
         let baro_altitude: number | null = flightData["states"][index][7];
         let on_ground: boolean = flightData["states"][index][8];
@@ -313,11 +306,17 @@ function showFlightInfo(index: number, mouse_x: number, mouse_y: number) {
         if (callsign) {
             text.innerText += `callsign: ${callsign}\n`;
         }
-        text.innerText += `from ${origin_country}\n`;
-        text.innerText += `lon: ${longtitude}\n`;
-        text.innerText += `lat: ${latitude}\n`;
+        text.innerText += `origin: ${origin_country}\n`;
+        text.innerText += `longitude: ${longitude}\n`;
+        text.innerText += `latitude: ${latitude}\n`;
+        if (geo_altitude) {
+            text.innerText += `altitude: ${geo_altitude}m\n`;
+        }
+        if (baro_altitude) {
+            text.innerText += `barometric altitude: ${baro_altitude}m\n`;
+        }
         if (velocity) {
-            text.innerText += `velocity: ${velocity}m/s\n`;
+            text.innerText += `velocity: ${(velocity * 3.6).toFixed(2)}km/h\n`;
         }
         text.innerText += `data from ${posSrcString}`;
         
@@ -347,7 +346,7 @@ function mouseWheel(e: WheelEvent) {
     if (camera.zoom + move < 0.5) {
         return;
     }
-    if (camera.zoom + move > 4.0) {
+    if (camera.zoom + move > 8.0) {
         return;
     }
     camera.zoom += e.deltaY * -0.001;
@@ -463,19 +462,3 @@ async function refreshFlightData(): Promise<void> {
     isVertexDataUpdated = true;
     console.log("[", LastFlightUpdateTime.toUTCString(), "]", "Flight data is refreshed.");
 }
-/*
-function texture_render_init(frameBuffer: FrameBuffer, renderBuffer: RenderBuffer, x: number, y: number): Texture {
-    let tex = new Texture(null, x, y);
-    frameBuffer.bind();
-    renderBuffer.bind();
-    frameBuffer.setTexture2D(tex.getWebGLTexture());
-    frameBuffer.setRenderBufferDepthAttachment(renderBuffer);
-    return tex;
-}
-
-function adjustFramebufferAttSize(renderBuffer: RenderBuffer, texture: Texture, x: number, y: number) {
-    texture.bind();
-    texture.refresh(x, y);
-    renderBuffer.storage(gl.DEPTH_COMPONENT16, x, y);
-}
-*/
