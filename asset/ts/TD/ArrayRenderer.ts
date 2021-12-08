@@ -9,15 +9,18 @@ export class ArrayRenderer implements IRenderer {
     private program: ShaderProgram;
     private drawMode: number
     private callback: () => void;
+    private aftercallback: () => void;
     private stride: number = 3;
 
-    public constructor(buffer: Buffer, stride: number, program: ShaderProgram, drawMode: number, callback: () => void) {
+    public constructor(buffer: Buffer, stride: number, program: ShaderProgram, drawMode: number, callback: () => void, aftercallback: () => void) {
         this.buffer = buffer;
         this.stride = stride;
         this.program = program;
         this.drawMode = drawMode;
         this.callback = callback;
+        this.aftercallback = aftercallback;
         callback.bind(this);
+        aftercallback.bind(this);
     }
 
     public draw(): void {
@@ -25,5 +28,6 @@ export class ArrayRenderer implements IRenderer {
         this.buffer.bind();
         this.program.use();
         this.gl.drawArrays(this.drawMode, 0, this.buffer.length / this.stride);
+        this.aftercallback();
     }
 }

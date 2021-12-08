@@ -18,7 +18,7 @@ import { Utils } from './Utils.js';
 import { Picker } from './TD/Picker.js';
 
 const gl = GL.instance;
-let isDebug = true;
+let isDebug = false;
 let dragging = false;
 let old_mouse_x: number
 let old_mouse_y: number;
@@ -32,6 +32,10 @@ let LastFlightUpdateTime: Date = new Date(1);
 let flightData: any;
 let vertexData: Array<number>;
 let isVertexDataUpdated: boolean = false;
+let lastPickedFlight: number;
+let earth_radius: number = 1.0;
+let atmo_thick: number = 0.05;
+let flight_view_altitude: number = 0.01;
 
 // 마우스 이벤트 설정
 canvas?.addEventListener("mousedown", mouseDown, false);
@@ -52,58 +56,55 @@ let camera = new Camera(fov, aspect, 1, 200, orbitRadius, zoom, new vec3([0, 0, 
 let earthVertexShader = new Shader("earth.vert", gl.VERTEX_SHADER);
 let earthFragmentShader = new Shader("earth.frag", gl.FRAGMENT_SHADER);
 let prog = new ShaderProgram("earth", earthVertexShader, earthFragmentShader);
-prog.use();
 
 // 항공기 셰이더 생성
 let flightVertexShader = new Shader("flight.vert", gl.VERTEX_SHADER);
 let flightFragmentShader = new Shader("flight.frag", gl.FRAGMENT_SHADER);
 let fprog = new ShaderProgram("flight", flightVertexShader, flightFragmentShader);
-fprog.use();
 
-// 선택 셰이터 생성
+// 선택 셰이더 생성
 let pickVertexShader = new Shader("pick.vert", gl.VERTEX_SHADER);
 let pickFragmentShader = new Shader("pick.frag", gl.FRAGMENT_SHADER);
 let pprog = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
 
-// 프레임 버퍼와 랜더 버퍼 생성
-//let renderBuffer = new RenderBuffer(gl.DEPTH_COMPONENT16);
-//let frameBuffer = new FrameBuffer();
-//frameBuffer.bind();
+// 버퍼 생성
 let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
 let ivbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
-
 let framebuffer = new FrameBuffer();
-let picker = new Picker(framebuffer);
+
+let btnRefresh = document.getElementById("btn-refresh");
+if (isDebug) { btnRefresh!.style.display = "block" }
 main();
 
 async function main() {
     //초기 설정을 합니다.
     initGL();
-    Earth.create(1.0, 36, 36);
+    let ground = new Earth(earth_radius, 36, 36);
+    let sky = new Earth(earth_radius + atmo_thick, 100, 100);
 
     // 버퍼에 정점 정보를 입력합니다.
     let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    vertexBuffer.upload(new Float32Array(Earth.vertex));
+    vertexBuffer.upload(new Float32Array(ground.vertex));
     vertexBuffer.unbind();
 
     // 버퍼에 인덱스 정보를 입력합니다.
     let indexBuffer = new Buffer(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
-    indexBuffer.uploadUShort(new Uint16Array(Earth.index));
+    indexBuffer.uploadUShort(new Uint16Array(ground.index));
     indexBuffer.unbind();
 
     // 버퍼에 텍스처 좌표 정보를 입력합니다.
     let uvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    uvBuffer.upload(new Float32Array(Earth.texcoord));
+    uvBuffer.upload(new Float32Array(ground.texcoord));
     uvBuffer.unbind();
 
     // 구름 텍스처 좌표 정보를 입력합니다.
     let cloudUvBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    cloudUvBuffer.upload(new Float32Array(Earth.cloudTexcoord));
+    cloudUvBuffer.upload(new Float32Array(ground.mercatorTexcoord));
     cloudUvBuffer.unbind();
 
     // 버퍼에 정점의 노말벡터 정보를 입력합니다.
     let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
-    normalBuffer.upload(new Float32Array(Earth.normal));
+    normalBuffer.upload(new Float32Array(ground.normal));
     normalBuffer.unbind();
 
     // 정점 설정
@@ -163,24 +164,29 @@ async function main() {
     let renderbuffer = new RenderBuffer();
     renderbuffer.bind();
     function setFramebufferAttachmentSizes(width: number, height: number) {
+        gl.activeTexture(gl.TEXTURE3);
         textureToRender.bind();
         textureToRender.texImage2D(width, height, null);
+        renderbuffer.bind();
         renderbuffer.storage(gl.DEPTH_COMPONENT16, width, height);
     }
     framebuffer.bind();
+    gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
-    setFramebufferAttachmentSizes(canvas.width, canvas.height);
     framebuffer.setTexture2D(textureToRender);
     framebuffer.setRenderBufferDepthAttachment(renderbuffer);
-
+    framebuffer.unbind();
+    
     let scene = new Renderer(clear, rotate);
-    scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawEarth));
-    scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint));
-    scene.addRenderer(new ArrayRenderer(fvbo, 3, pprog, gl.POINTS, drawPointOffscreen))
+    scene.addRenderer(new ArrayRenderer(fvbo, 3, pprog, gl.POINTS, drawPointOffscreen, pick));
+    scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawEarth, () => void {}));
+    scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint, () => void {}));
+
     scene.requestAnimation();
 
     function drawEarth() {
-        framebuffer.unbind();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
@@ -188,7 +194,8 @@ async function main() {
     }
 
     function drawPoint() {
-        framebuffer.unbind();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.uniformMatrix4fv(fprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(fprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
         gl.uniformMatrix4fv(fprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
@@ -197,13 +204,25 @@ async function main() {
     function drawPointOffscreen() {
         framebuffer.bind();
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.uniformMatrix4fv(pprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(pprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
         gl.uniformMatrix4fv(pprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
     }
 
+    function pick() {
+        let pX = pick_mouse_x * gl.canvas.width / gl.canvas.clientWidth;
+        let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / gl.canvas.clientHeight - 1;
+        lastPickedFlight = Picker.select(pX, pY);
+    }
+
     function clear() {
+        if (Utils.resizeCanvas(canvas)) {
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
+        }
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
         if (isVertexDataUpdated) {
             isVertexDataUpdated = false;
     
@@ -227,11 +246,6 @@ async function main() {
             gl.vertexAttribPointer(pvinColor, 4, gl.FLOAT, false, 0, 0);
             gl.enableVertexAttribArray(pvinColor);
         }
-    
-        if (Utils.resizeCanvas(canvas)) {
-            setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
-            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        }
     }
 }
 
@@ -240,6 +254,7 @@ function initGL() {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 }
 
@@ -257,10 +272,7 @@ function mouseUp(e: MouseEvent) {
 }
 
 function mouseClick(e: MouseEvent) {
-    let pX = pick_mouse_x * gl.canvas.width / gl.canvas.clientWidth;
-    let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / gl.canvas.clientHeight - 1;
-    let picked_flight = picker.select(pX, pY);
-    showFlightInfo(picked_flight, e.clientX, e.clientY);
+    showFlightInfo(lastPickedFlight, e.clientX, e.clientY);
 }
 
 function showFlightInfo(index: number, mouse_x: number, mouse_y: number) {
@@ -302,23 +314,23 @@ function showFlightInfo(index: number, mouse_x: number, mouse_y: number) {
         } else {
             posSrcString = "unknown";
         }
-        text.innerText = `icao24: ${icao24}\n`;
+        text.innerText = `ICAO24: ${icao24}\n`;
         if (callsign) {
-            text.innerText += `callsign: ${callsign}\n`;
+            text.innerText += `Callsign: ${callsign}\n`;
         }
-        text.innerText += `origin: ${origin_country}\n`;
-        text.innerText += `longitude: ${longitude}\n`;
-        text.innerText += `latitude: ${latitude}\n`;
+        text.innerText += `Origin: ${origin_country}\n`;
+        text.innerText += `Longitude: ${longitude}\n`;
+        text.innerText += `Latitude: ${latitude}\n`;
         if (geo_altitude) {
-            text.innerText += `altitude: ${geo_altitude}m\n`;
+            text.innerText += `Altitude: ${geo_altitude}m\n`;
         }
         if (baro_altitude) {
-            text.innerText += `barometric altitude: ${baro_altitude}m\n`;
+            text.innerText += `Barometric altitude: ${baro_altitude}m\n`;
         }
         if (velocity) {
-            text.innerText += `velocity: ${(velocity * 3.6).toFixed(2)}km/h\n`;
+            text.innerText += `Velocity: ${(velocity * 3.6).toFixed(2)}km/h\n`;
         }
-        text.innerText += `data from ${posSrcString}`;
+        text.innerText += `Data from ${posSrcString}`;
         
     } else {
         infobox.style.display = 'none';
@@ -449,7 +461,7 @@ async function refreshFlightData(): Promise<void> {
         for (let i = 0; i < data["states"].length; i++) {
             let lon = data["states"][i][6];
             let lat = data["states"][i][5];
-            let point = Earth.pointAt(1.01, lat, lon);
+            let point = Earth.pointAt(earth_radius + flight_view_altitude, lat, lon);
             arr.push(point[0], point[1], point[2]);
         }
         return arr;

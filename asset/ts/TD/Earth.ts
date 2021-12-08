@@ -1,45 +1,36 @@
 export class Earth {
-    private static _vertex: number[] = [];
-    private static _normal: number[] = [];
-    private static _texcoord: number[] = [];
-    private static _cloudTexcoord: number[] = [];
-    private static _index: number[] = [];
-    private static isInitialized: boolean = false;
+    private _vertex: number[] = [];
+    private _normal: number[] = [];
+    private _texcoord: number[] = [];
+    private _mercatorTexcoord: number[] = [];
+    private _index: number[] = [];
     
-    private constructor() {}
+    public constructor(radius: number, stacks: number, sectors: number) {
+        this.create(radius, stacks, sectors);
+    }
     
-    public static get vertex(): number[] {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._vertex;
+    public get vertex(): number[] {
+        return this._vertex;
     }
 
-    public static get normal(): number[] {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._normal;
+    public get normal(): number[] {
+        return this._normal;
     }
 
-    public static get texcoord(): number[] {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._texcoord;
+    public get texcoord(): number[] {
+        return this._texcoord;
     }
 
-    public static get cloudTexcoord(): number[] {
-        if (!this.isInitialized)
-            throw new Error("Mesh is not initialized.");
-        return Earth._cloudTexcoord;
+    public get mercatorTexcoord(): number[] {
+        return this._mercatorTexcoord;
     }
 
-    public static get index(): number[] {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._index;
+    public get index(): number[] {
+        return this._index;
     }
 
     // @http://www.songho.ca/opengl/gl_sphere.html
-    public static create(radius: number, stacks: number, sectors: number) {
+    private create(radius: number, stacks: number, sectors: number) {
         let phi, theta;
         let x, y, z;
         let nx, ny, nz;
@@ -74,14 +65,13 @@ export class Earth {
                 //e is base of the natural logarithm.
                 mu = u;
                 mv = ((Math.log(Math.tan(Math.PI / 4.0 + (v - 0.5) * Math.PI / 2.0))) + Math.PI) / (2 * Math.PI); // normalize
-                this._cloudTexcoord.push(mu, mv);
+                this._mercatorTexcoord.push(mu, mv);
             }
         }
         this.createIndex(stacks, sectors);
-        this.isInitialized = true;
     }
 
-    private static createIndex(stacks: number, sectors: number) {
+    private createIndex(stacks: number, sectors: number) {
        let k1, k2;
        for (let i = 0; i < stacks; i++) {
            k1 = i * (sectors + 1);
@@ -98,7 +88,7 @@ export class Earth {
            }
        }
     }
-
+    
     public static pointAt(radius: number, lat: number, lon: number): number[] {
         let ret = [];
         lat += 180;
