@@ -124,8 +124,8 @@ export class Earth {
         let sec = date.getUTCSeconds();
 
         let degree = h *  15.0 + min * 0.25 + sec * 0.00417;
-        console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
-        console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
+        //console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
+        //console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
         return this.lightPos(-degree);
     }
 }

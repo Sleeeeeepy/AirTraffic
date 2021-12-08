@@ -16,9 +16,10 @@ import { RenderBuffer } from './TD/RenderBuffer.js';
 import { FrameBuffer } from './TD/FrameBuffer.js';
 import { Utils } from './Utils.js';
 import { Picker } from './TD/Picker.js';
+import vec4 from './tsm/vec4.js';
 
 const gl = GL.instance;
-let isDebug = false;
+let isDebug = true;
 let dragging = false;
 let old_mouse_x: number
 let old_mouse_y: number;
@@ -34,8 +35,9 @@ let vertexData: Array<number>;
 let isVertexDataUpdated: boolean = false;
 let lastPickedFlight: number;
 let earth_radius: number = 1.0;
-let atmo_thick: number = 0.05;
-let flight_view_altitude: number = 0.01;
+let atmo_thick: number = 0.02;
+let flight_view_altitude: number = 0.03;
+let lightPos = Earth.lightPosTime(0);
 
 // 마우스 이벤트 설정
 canvas?.addEventListener("mousedown", mouseDown, false);
@@ -50,7 +52,7 @@ let orbitRadius = 100;
 let zoom = 0.5;
 let fov = Math.PI / 3
 let aspect = Utils.getAspect(canvas);
-let camera = new Camera(fov, aspect, 1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), true);
+let camera = new Camera(fov, aspect, 1, 200, orbitRadius, zoom, new vec3([0, 0, 0]), false);
 
 // 지구 셰이더 생성
 let earthVertexShader = new Shader("earth.vert", gl.VERTEX_SHADER);
@@ -67,6 +69,11 @@ let pickVertexShader = new Shader("pick.vert", gl.VERTEX_SHADER);
 let pickFragmentShader = new Shader("pick.frag", gl.FRAGMENT_SHADER);
 let pprog = new ShaderProgram("picker", pickVertexShader, pickFragmentShader);
 
+// 대기 셰이더 생성
+let atmoVertexShader = new Shader("atmo.vert", gl.VERTEX_SHADER);
+let atmoFragmentShader = new Shader("atmo.frag", gl.FRAGMENT_SHADER);
+let aprog = new ShaderProgram("atmosphere", atmoVertexShader, atmoFragmentShader);
+
 // 버퍼 생성
 let fvbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
 let ivbo = new Buffer(gl.ARRAY_BUFFER, gl.DYNAMIC_DRAW);
@@ -80,14 +87,24 @@ async function main() {
     //초기 설정을 합니다.
     initGL();
     let ground = new Earth(earth_radius, 36, 36);
-    let sky = new Earth(earth_radius + atmo_thick, 100, 100);
+    let atmo = new Earth(earth_radius + atmo_thick, 100, 100);
 
-    // 버퍼에 정점 정보를 입력합니다.
+    // 버퍼에 atmo 정점 정보를 입력합니다.
+    let atmoBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
+    atmoBuffer.upload(new Float32Array(atmo.vertex));
+    atmoBuffer.unbind();
+
+    // 버퍼에 ground 정점 정보를 입력합니다.
     let vertexBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     vertexBuffer.upload(new Float32Array(ground.vertex));
     vertexBuffer.unbind();
 
-    // 버퍼에 인덱스 정보를 입력합니다.
+    // 버퍼에 atmo 인덱스 정보를 입력합니다.
+    let atmoIndex = new Buffer(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
+    atmoIndex.uploadUShort(new Uint16Array(atmo.index));
+    atmoIndex.unbind();
+
+    // 버퍼에 ground 인덱스 정보를 입력합니다.
     let indexBuffer = new Buffer(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW);
     indexBuffer.uploadUShort(new Uint16Array(ground.index));
     indexBuffer.unbind();
@@ -106,6 +123,11 @@ async function main() {
     let normalBuffer = new Buffer(gl.ARRAY_BUFFER, gl.STATIC_DRAW);
     normalBuffer.upload(new Float32Array(ground.normal));
     normalBuffer.unbind();
+
+    // 대기 정점 설정
+    atmoBuffer.bind();
+    aprog.setVertexArrayObject("position", atmoBuffer, 3, gl.FLOAT, false, 0, 0);
+    atmoBuffer.unbind();
 
     // 정점 설정
     vertexBuffer.bind();
@@ -137,12 +159,7 @@ async function main() {
     // 밤 텍스처 설정
     let nightTexture = new ImageTexture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
     gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
-
-    let lightPos = Earth.lightPosTime(0);
-    //빛 방향 설정
-    gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
-    //gl.uniform3f(prog.getUniformLocation("uCameraLoc"), camera.cameraPosition!.at(0), camera.cameraPosition!.at(1), camera.cameraPosition!.at(2));
-
+    
     //인덱스 버퍼 바인드
     indexBuffer.bind();
 
@@ -171,23 +188,36 @@ async function main() {
         renderbuffer.storage(gl.DEPTH_COMPONENT16, width, height);
     }
     framebuffer.bind();
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
     framebuffer.setTexture2D(textureToRender);
     framebuffer.setRenderBufferDepthAttachment(renderbuffer);
     framebuffer.unbind();
-    
     let scene = new Renderer(clear, rotate);
-    scene.addRenderer(new ArrayRenderer(fvbo, 3, pprog, gl.POINTS, drawPointOffscreen, pick));
     scene.addRenderer(new ElementRenderer(indexBuffer, prog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawEarth, () => void {}));
+    scene.addRenderer(new ElementRenderer(atmoIndex, aprog, gl.TRIANGLES, gl.UNSIGNED_SHORT, drawAtmo, () => void {}));
     scene.addRenderer(new ArrayRenderer(fvbo, 3, fprog, gl.POINTS, drawPoint, () => void {}));
-
+    scene.addRenderer(new ArrayRenderer(fvbo, 3, pprog, gl.POINTS, drawPointOffscreen, pick));
     scene.requestAnimation();
+
+    function drawAtmo() {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        let cameraPos = new vec3([camera.cameraPosition!.at(0), camera.cameraPosition!.at(1), camera.cameraPosition!.at(2)]);
+        let inwaveLength = new vec3([1.0 /Math.pow(0.731, 4.0), 1.0 /Math.pow(0.612, 4.0), 1.0 /Math.pow(0.455, 4.0)]);
+        let lightPosVec3 = new vec3([lightPos[0], lightPos[1], lightPos[2]]);
+        let camHeight = cameraPos.length();
+        setAtmoUniforms(cameraPos, lightPosVec3, inwaveLength, camHeight, earth_radius + atmo_thick, earth_radius, 0.0025, 0.0015, 10, 2, 2.0, -0.950, 1.0);
+        gl.uniformMatrix4fv(aprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
+        gl.uniformMatrix4fv(aprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
+        gl.uniformMatrix4fv(aprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    }
 
     function drawEarth() {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.uniform3f(prog.getUniformLocation("uLightDir"), lightPos[0], lightPos[1], lightPos[2]);
         gl.uniformMatrix4fv(prog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(prog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
         gl.uniformMatrix4fv(prog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
@@ -199,6 +229,7 @@ async function main() {
         gl.uniformMatrix4fv(fprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(fprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
         gl.uniformMatrix4fv(fprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        gl.blendFunc(gl.ONE, gl.ZERO); // no blend
     }
 
     function drawPointOffscreen() {
@@ -208,6 +239,7 @@ async function main() {
         gl.uniformMatrix4fv(pprog.getUniformLocation("uWorldMatrix"), false, camera.worldMatrix.all());
         gl.uniformMatrix4fv(pprog.getUniformLocation("uViewMatrix"), false, camera.viewMatrix.all());
         gl.uniformMatrix4fv(pprog.getUniformLocation("uProjectionMatrix"), false, camera.projectionMatrix.all());
+        gl.blendFunc(gl.ONE, gl.ZERO); // no blend
     }
 
     function pick() {
@@ -217,6 +249,7 @@ async function main() {
     }
 
     function clear() {
+        lightPos = Earth.lightPosTime(0);
         if (Utils.resizeCanvas(canvas)) {
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
@@ -253,6 +286,8 @@ function initGL() {
     gl.frontFace(gl.CCW);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);
+    //gl.blendFunc(gl.ONE, gl.ONE);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -449,8 +484,6 @@ async function refreshCloud(cloudTexture: ImageTexture): Promise<void> {
 
 // time: epoch
 // states: Array<FlightData>
-// FlightData is
-// ...
 async function refreshFlightData(): Promise<void> {
     //get flight data per 10 sec
     if (!Utils.isUpdatable(LastFlightUpdateTime, 10000)) {
@@ -473,4 +506,31 @@ async function refreshFlightData(): Promise<void> {
     vertexData = resolveFlightData(flightData);
     isVertexDataUpdated = true;
     console.log("[", LastFlightUpdateTime.toUTCString(), "]", "Flight data is refreshed.");
+}
+
+function setAtmoUniforms(
+    cameraPos: vec3, lightPos: vec3, Inwave: vec3, camHeight: number, outerRadius: number, 
+    innerRadius: number, kr: number, km: number, eSun: number, nSamples: number, fSamples: number,
+    g: number, exposure: number) {
+    gl.uniform3fv(aprog.getUniformLocation("v3CameraPos"), cameraPos.xyz);
+    gl.uniform3fv(aprog.getUniformLocation("v3LightPos"), lightPos.xyz);
+    gl.uniform3fv(aprog.getUniformLocation("v3InvWavelength"), Inwave.xyz);
+    //gl.uniform1f(aprog.getUniformLocation("fCameraHeight"), camHeight);
+    gl.uniform1f(aprog.getUniformLocation("fCameraHeight2"), camHeight * camHeight);
+    gl.uniform1f(aprog.getUniformLocation("fOuterRadius"), outerRadius);
+    gl.uniform1f(aprog.getUniformLocation("fOuterRadius2"), outerRadius * outerRadius);
+    gl.uniform1f(aprog.getUniformLocation("fInnerRadius"), innerRadius);
+    //gl.uniform1f(aprog.getUniformLocation("fInnerRadius2"), innerRadius * innerRadius);
+    gl.uniform1f(aprog.getUniformLocation("fKrESun"), kr * eSun);
+    gl.uniform1f(aprog.getUniformLocation("fKmESun"), km * eSun);
+    gl.uniform1f(aprog.getUniformLocation("fKr4PI"), kr * 4 * Math.PI);
+    gl.uniform1f(aprog.getUniformLocation("fKm4PI"), km * 4 * Math.PI);
+    gl.uniform1f(aprog.getUniformLocation("fScale"), 1 / (outerRadius - innerRadius));
+    gl.uniform1f(aprog.getUniformLocation("fScaleDepth"), 0.25);
+    gl.uniform1f(aprog.getUniformLocation("fScaleOverScaleDepth"), (1 / (outerRadius - innerRadius)) / (km * 4 * Math.PI) );
+    //gl.uniform1i(aprog.getUniformLocation("nSamples"), nSamples);
+    //gl.uniform1f(aprog.getUniformLocation("fSamples"), fSamples);
+    gl.uniform1f(aprog.getUniformLocation("g"), g);
+    gl.uniform1f(aprog.getUniformLocation("g2"), g * g);
+    //gl.uniform1f(aprog.getUniformLocation("fExposure"), exposure);
 }
