@@ -14,6 +14,7 @@
     <body>
         <canvas id="gl_canvas"></canvas>
         <div id="box"><div id="boxinner"></div></div>
+        <button id="btn-refresh" onclick="location.reload()">Refresh</button>
         <script type="x-shader/x-vertex" id="earth.vert">#version 300 es
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec2 vinTexturecoord;
@@ -46,15 +47,15 @@ uniform sampler2D uDayTexture;
 uniform sampler2D uNightTexture;
 uniform sampler2D uCloudTexture;
 uniform vec3 uLightDir;
-//uniform vec3 uCameraLoc;
-
 out vec4 Color;
+
 void main(void) {
     const float dffborder = 0.25;
     vec3 day = texture(uDayTexture, voutTexturecoord).rgb;
     vec3 night = texture(uNightTexture, voutTexturecoord).rgb;
     vec4 cloud = texture(uCloudTexture, voutCloudTexturecoord).rgba;
     float shade = max(0.0, dot(voutTextureNormal, uLightDir) + dffborder);
+
     Color = vec4(day - shade, 1.0);
 
     if (shade >= dffborder) {
