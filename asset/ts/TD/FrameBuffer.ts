@@ -20,7 +20,7 @@ export class FrameBuffer {
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
 
-    public getWebGLFrameBuffer(): WebGLTexture {
+    public getWebGLFrameBuffer(): WebGLFramebuffer {
         if (this.frameBuffer) {
             return this.frameBuffer;
         }
