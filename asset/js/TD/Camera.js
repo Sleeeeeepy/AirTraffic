@@ -30,10 +30,14 @@ export class Camera {
             0, 0, 1, 0,
             0, 0, 0, 1
         ]);
+        this._cameraPosition = new vec3([0, 0, 0]);
         this.updateCameraMatrix();
     }
     get cameraPosition() {
-        return this._cameraPosition;
+        let mat = this.viewMatrix.copy();
+        mat = mat.multiply(this.worldMatrix.copy());
+        let ret = new vec3([mat.at(12), mat.at(13), mat.at(14)]);
+        return ret;
     }
     get aspect() {
         return this._aspect;
@@ -111,8 +115,8 @@ export class Camera {
         ]);
         cameraMatrix.rotate(Math.PI / 2, new vec3([1, 0, 0]));
         cameraMatrix.translate(new vec3([0, 0, this._orbit / this._zoom]));
-        this._cameraPosition = new vec3([cameraMatrix.at(12), cameraMatrix.at(13), cameraMatrix.at(14)]);
-        cameraMatrix = mat4.lookAt(this._cameraPosition, this._target, this._up);
+        let campos = new vec3([cameraMatrix.at(12), cameraMatrix.at(13), cameraMatrix.at(14)]);
+        cameraMatrix = mat4.lookAt(campos, this._target, this._up);
         this._viewMatrix = cameraMatrix.copy();
         this.isUpdated = false;
     }
@@ -143,7 +147,7 @@ export class Camera {
         this._worldMatrix.rotate(radian, Camera._zAxis);
         this.isUpdated = true;
     }
-    RotateQuatEuler(Xradian, Yradian, Zradian) {
+    objectRotateQuatFromEulerAngle(Xradian, Yradian, Zradian) {
         Xradian /= 2;
         Yradian /= 2;
         Zradian /= 2;

@@ -1,31 +1,28 @@
 export class Earth {
-    constructor() { }
-    static get vertex() {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._vertex;
+    constructor(radius, stacks, sectors) {
+        this._vertex = [];
+        this._normal = [];
+        this._texcoord = [];
+        this._mercatorTexcoord = [];
+        this._index = [];
+        this.create(radius, stacks, sectors);
     }
-    static get normal() {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._normal;
+    get vertex() {
+        return this._vertex;
     }
-    static get texcoord() {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._texcoord;
+    get normal() {
+        return this._normal;
     }
-    static get cloudTexcoord() {
-        if (!this.isInitialized)
-            throw new Error("Mesh is not initialized.");
-        return Earth._cloudTexcoord;
+    get texcoord() {
+        return this._texcoord;
     }
-    static get index() {
-        if (!this.isInitialized)
-            throw Error("Mesh is not initialized.");
-        return Earth._index;
+    get mercatorTexcoord() {
+        return this._mercatorTexcoord;
     }
-    static create(radius, stacks, sectors) {
+    get index() {
+        return this._index;
+    }
+    create(radius, stacks, sectors) {
         let phi, theta;
         let x, y, z;
         let nx, ny, nz;
@@ -49,13 +46,12 @@ export class Earth {
                 this._texcoord.push(u, v);
                 mu = u;
                 mv = ((Math.log(Math.tan(Math.PI / 4.0 + (v - 0.5) * Math.PI / 2.0))) + Math.PI) / (2 * Math.PI);
-                this._cloudTexcoord.push(mu, mv);
+                this._mercatorTexcoord.push(mu, mv);
             }
         }
         this.createIndex(stacks, sectors);
-        this.isInitialized = true;
     }
-    static createIndex(stacks, sectors) {
+    createIndex(stacks, sectors) {
         let k1, k2;
         for (let i = 0; i < stacks; i++) {
             k1 = i * (sectors + 1);
@@ -105,15 +101,7 @@ export class Earth {
         let min = date.getUTCMinutes();
         let sec = date.getUTCSeconds();
         let degree = h * 15.0 + min * 0.25 + sec * 0.00417;
-        console.log("UTC", h, "H", min, "M", sec, "S", degree, "degree");
-        console.log("Local", date.getHours(), "H", date.getMinutes(), "M", date.getSeconds(), "S", degree, "degree");
         return this.lightPos(-degree);
     }
 }
-Earth._vertex = [];
-Earth._normal = [];
-Earth._texcoord = [];
-Earth._cloudTexcoord = [];
-Earth._index = [];
-Earth.isInitialized = false;
 //# sourceMappingURL=Earth.js.map
