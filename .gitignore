@@ -1,2 +1,3 @@
 asset/ts/convention.txt
 asset/**/*.js.map
+.vscode/settings.json
