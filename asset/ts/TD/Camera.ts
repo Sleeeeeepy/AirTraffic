@@ -11,7 +11,7 @@ export class Camera {
     private _orbit: number = 100;
     private _zoom: number = 1.0;
     private _target: vec3;
-    private _cameraPosition: vec3 | undefined;
+    private _cameraPosition: vec3;
     private _viewMatrix: mat4;
     private _worldMatrix: mat4;
     private _projectionMatrix: mat4;
@@ -45,11 +45,15 @@ export class Camera {
             0, 0, 1, 0,
             0, 0, 0, 1
         ]);
+        this._cameraPosition = new vec3([0, 0, 0]);
         this.updateCameraMatrix();
     }
     
     public get cameraPosition(): vec3 | undefined {
-        return this._cameraPosition;
+        let mat = this.viewMatrix.copy();
+        mat = mat.multiply(this.worldMatrix.copy());
+        let ret = new vec3([mat.at(12), mat.at(13), mat.at(14)])
+        return ret;
     }
 
     public get aspect(): number {
@@ -142,8 +146,8 @@ export class Camera {
             0, 0, 0, 1]);
         cameraMatrix.rotate(Math.PI/2, new vec3([1, 0, 0]));
         cameraMatrix.translate(new vec3([0, 0, this._orbit / this._zoom]));
-        this._cameraPosition = new vec3([cameraMatrix.at(12), cameraMatrix.at(13), cameraMatrix.at(14)]);
-        cameraMatrix = mat4.lookAt(this._cameraPosition, this._target, this._up);
+        let campos = new vec3([cameraMatrix.at(12), cameraMatrix.at(13), cameraMatrix.at(14)]);
+        cameraMatrix = mat4.lookAt(campos, this._target, this._up);
         this._viewMatrix = cameraMatrix.copy();
         this.isUpdated = false;
         
@@ -182,7 +186,7 @@ export class Camera {
 
     // rotate using quaternion with euler angle.
     // x->y->z
-    public RotateQuatEuler(Xradian: number, Yradian: number, Zradian: number) {
+    public objectRotateQuatFromEulerAngle(Xradian: number, Yradian: number, Zradian: number) {
         Xradian /= 2;
         Yradian /= 2;
         Zradian /= 2;
