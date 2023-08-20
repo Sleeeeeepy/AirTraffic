@@ -1,9 +1,5 @@
 # Realtime Air Traffic
 
-생성 일시: 2023년 4월 25일 오전 2:20
-태그: 3D, OpenAPI, TypeScript, WebGL, 팀 프로젝트
-Repo: https://github.com/Sleeeeeepy/AirTraffic
-
 ![image6.png](Realtime%20Air%20Traffic%20f85f26fe2755466d984faa8e05b01b52/image6.png)
 
 ![image7.png](Realtime%20Air%20Traffic%20f85f26fe2755466d984faa8e05b01b52/image7.png)
