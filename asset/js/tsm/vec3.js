@@ -1,12 +1,6 @@
 import quat from './quat.js';
 import { epsilon } from './constants.js';
-export default class vec3 {
-    constructor(values) {
-        this.values = new Float32Array(3);
-        if (values !== undefined) {
-            this.xyz = values;
-        }
-    }
+class vec3 {
     get x() {
         return this.values[0];
     }
@@ -46,6 +40,12 @@ export default class vec3 {
         this.values[0] = values[0];
         this.values[1] = values[1];
         this.values[2] = values[2];
+    }
+    constructor(values) {
+        this.values = new Float32Array(3);
+        if (values !== undefined) {
+            this.xyz = values;
+        }
     }
     at(index) {
         return this.values[index];
@@ -284,4 +284,5 @@ vec3.one = new vec3([1, 1, 1]);
 vec3.up = new vec3([0, 1, 0]);
 vec3.right = new vec3([1, 0, 0]);
 vec3.forward = new vec3([0, 0, 1]);
+export default vec3;
 //# sourceMappingURL=vec3.js.map

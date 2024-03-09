@@ -1,12 +1,6 @@
 import vec3 from './vec3.js';
 import { epsilon } from './constants.js';
-export default class vec2 {
-    constructor(values) {
-        this.values = new Float32Array(2);
-        if (values !== undefined) {
-            this.xy = values;
-        }
-    }
+class vec2 {
     get x() {
         return this.values[0];
     }
@@ -28,6 +22,12 @@ export default class vec2 {
     set xy(values) {
         this.values[0] = values[0];
         this.values[1] = values[1];
+    }
+    constructor(values) {
+        this.values = new Float32Array(2);
+        if (values !== undefined) {
+            this.xy = values;
+        }
     }
     at(index) {
         return this.values[index];
@@ -216,4 +216,5 @@ export default class vec2 {
 }
 vec2.zero = new vec2([0, 0]);
 vec2.one = new vec2([1, 1]);
+export default vec2;
 //# sourceMappingURL=vec2.js.map

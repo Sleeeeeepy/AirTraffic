@@ -1,6 +1,6 @@
 import vec2 from './vec2.js';
 import { epsilon } from './constants.js';
-export default class mat2 {
+class mat2 {
     constructor(values) {
         this.values = new Float32Array(4);
         if (values !== undefined) {
@@ -165,4 +165,5 @@ export default class mat2 {
     }
 }
 mat2.identity = new mat2().setIdentity();
+export default mat2;
 //# sourceMappingURL=mat2.js.map

@@ -1,11 +1,5 @@
 import { epsilon } from './constants.js';
-export default class vec4 {
-    constructor(values) {
-        this.values = new Float32Array(4);
-        if (values !== undefined) {
-            this.xyzw = values;
-        }
-    }
+class vec4 {
     get x() {
         return this.values[0];
     }
@@ -125,6 +119,12 @@ export default class vec4 {
         this.values[1] = values[1];
         this.values[2] = values[2];
         this.values[3] = values[3];
+    }
+    constructor(values) {
+        this.values = new Float32Array(4);
+        if (values !== undefined) {
+            this.xyzw = values;
+        }
     }
     at(index) {
         return this.values[index];
@@ -299,4 +299,5 @@ export default class vec4 {
 }
 vec4.zero = new vec4([0, 0, 0, 1]);
 vec4.one = new vec4([1, 1, 1, 1]);
+export default vec4;
 //# sourceMappingURL=vec4.js.map

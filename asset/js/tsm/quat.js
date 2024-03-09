@@ -2,13 +2,7 @@ import mat3 from './mat3.js';
 import mat4 from './mat4.js';
 import vec3 from './vec3.js';
 import { epsilon } from './constants.js';
-export default class quat {
-    constructor(values) {
-        this.values = new Float32Array(4);
-        if (values !== undefined) {
-            this.xyzw = values;
-        }
-    }
+class quat {
     get x() {
         return this.values[0];
     }
@@ -68,6 +62,12 @@ export default class quat {
         this.values[1] = values[1];
         this.values[2] = values[2];
         this.values[3] = values[3];
+    }
+    constructor(values) {
+        this.values = new Float32Array(4);
+        if (values !== undefined) {
+            this.xyzw = values;
+        }
     }
     at(index) {
         return this.values[index];
@@ -414,4 +414,5 @@ export default class quat {
     }
 }
 quat.identity = new quat().setIdentity();
+export default quat;
 //# sourceMappingURL=quat.js.map

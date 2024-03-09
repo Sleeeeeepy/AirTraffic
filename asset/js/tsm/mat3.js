@@ -3,7 +3,7 @@ import quat from './quat.js';
 import vec2 from './vec2.js';
 import vec3 from './vec3.js';
 import { epsilon } from './constants.js';
-export default class mat3 {
+class mat3 {
     constructor(values) {
         this.values = new Float32Array(9);
         if (values !== undefined) {
@@ -394,4 +394,5 @@ export default class mat3 {
     }
 }
 mat3.identity = new mat3().setIdentity();
+export default mat3;
 //# sourceMappingURL=mat3.js.map
