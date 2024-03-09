@@ -104,9 +104,9 @@ function main() {
         prog.setVertexArrayObject("vinTextureNormal", normalBuffer, 3, gl.FLOAT, false, 0, 0);
         normalBuffer.unbind();
         let cloudTexture = yield setCloudTexture();
-        let dayTexture = new ImageTexture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
+        let dayTexture = new ImageTexture("./asset/textures/earth_day.jpg", gl.TEXTURE0);
         gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
-        let nightTexture = new ImageTexture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
+        let nightTexture = new ImageTexture("./asset/textures/earth_night.jpg", gl.TEXTURE1);
         gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
         indexBuffer.bind();
         refreshFlightData();
@@ -333,7 +333,7 @@ function setCloudTexture() {
             });
         }
         else {
-            cloudTexture = new ImageTexture("/asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
+            cloudTexture = new ImageTexture("./asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
             gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
         }
         if (!cloudTexture) {
