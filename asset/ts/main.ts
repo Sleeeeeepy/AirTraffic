@@ -205,8 +205,8 @@ async function main() {
     }
 
     function pick() {
-        let pX = pick_mouse_x * gl.canvas.width / gl.canvas.clientWidth;
-        let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / gl.canvas.clientHeight - 1;
+        let pX = pick_mouse_x * gl.canvas.width / (gl.canvas as HTMLCanvasElement).clientWidth;
+        let pY = gl.canvas.height - pick_mouse_y * gl.canvas.height / (gl.canvas as HTMLCanvasElement).clientHeight - 1;
         lastPickedFlight = Picker.select(pX, pY);
     }
 
