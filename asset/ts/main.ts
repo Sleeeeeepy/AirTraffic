@@ -132,11 +132,11 @@ async function main() {
     let cloudTexture = await setCloudTexture();
 
     // 낮 텍스처 설정
-    let dayTexture = new ImageTexture("/asset/textures/earth_day.jpg", gl.TEXTURE0);
+    let dayTexture = new ImageTexture("./asset/textures/earth_day.jpg", gl.TEXTURE0);
     gl.uniform1i(prog.getUniformLocation("uDayTexture"), 0);
 
     // 밤 텍스처 설정
-    let nightTexture = new ImageTexture("/asset/textures/earth_night.jpg", gl.TEXTURE1);
+    let nightTexture = new ImageTexture("./asset/textures/earth_night.jpg", gl.TEXTURE1);
     gl.uniform1i(prog.getUniformLocation("uNightTexture"), 1);
     
     //인덱스 버퍼 바인드
@@ -406,7 +406,7 @@ async function setCloudTexture(): Promise<ImageTexture> {
             gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
         });
     } else {
-        cloudTexture = new ImageTexture("/asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
+        cloudTexture = new ImageTexture("./asset/textures/earth_cloud_radar.png", gl.TEXTURE2);
         gl.uniform1i(prog.getUniformLocation("uCloudTexture"), 2);
     }
 
